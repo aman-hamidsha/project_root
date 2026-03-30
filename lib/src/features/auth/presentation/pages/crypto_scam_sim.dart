@@ -17,9 +17,19 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
   int _balance = _startingBalance;
   int _savedLosses = 0;
   final List<InvestmentDecision> _decisions = <InvestmentDecision>[];
+  final TextEditingController _reasoningController = TextEditingController();
+  final Set<String> _selectedActionIds = <String>{};
+  SimTradeDecision? _selectedDecision;
+  CryptoDecisionEvaluation? _currentEvaluation;
 
   CryptoProject get _currentProject => _projects[_projectIndex];
   bool get _finished => _projectIndex >= _projects.length;
+
+  @override
+  void dispose() {
+    _reasoningController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +71,7 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
               Text(
                 _finished
                     ? 'Review how your choices handled rug pulls, pump-and-dumps, fake audits, and influencer hype.'
-                    : 'Inspect each project like a cautious trader. Look for liquidity traps, unrealistic promises, fake communities, and exit scams before you “invest.”',
+                    : 'Inspect each project like a cautious trader. Use the clues on screen, choose what you would do, and analyze the risk before revealing the simulated outcome.',
                 style: TextStyle(
                   color: subtitleColor,
                   fontSize: 16,
@@ -110,8 +120,19 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
                                   flex: 4,
                                   child: _TrainingPanel(
                                     project: _currentProject,
-                                    onSkip: () => _handleDecision(false),
-                                    onInvest: () => _handleDecision(true),
+                                    reasoningController: _reasoningController,
+                                    selectedActionIds: _selectedActionIds,
+                                    selectedDecision: _selectedDecision,
+                                    evaluation: _currentEvaluation,
+                                    onToggleAction: _toggleAction,
+                                    onDecisionChanged: (decision) {
+                                      setState(
+                                        () => _selectedDecision = decision,
+                                      );
+                                    },
+                                    onAnalyze: _analyzeCurrentDecision,
+                                    onCommit: _commitCurrentDecision,
+                                    onReset: _resetCurrentDecisionState,
                                   ),
                                 ),
                               ],
@@ -124,8 +145,17 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
                               const SizedBox(height: 16),
                               _TrainingPanel(
                                 project: _currentProject,
-                                onSkip: () => _handleDecision(false),
-                                onInvest: () => _handleDecision(true),
+                                reasoningController: _reasoningController,
+                                selectedActionIds: _selectedActionIds,
+                                selectedDecision: _selectedDecision,
+                                evaluation: _currentEvaluation,
+                                onToggleAction: _toggleAction,
+                                onDecisionChanged: (decision) {
+                                  setState(() => _selectedDecision = decision);
+                                },
+                                onAnalyze: _analyzeCurrentDecision,
+                                onCommit: _commitCurrentDecision,
+                                onReset: _resetCurrentDecisionState,
                               ),
                             ],
                           );
@@ -139,7 +169,52 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
     );
   }
 
-  void _handleDecision(bool invested) {
+  void _toggleAction(String actionId) {
+    setState(() {
+      if (!_selectedActionIds.add(actionId)) {
+        _selectedActionIds.remove(actionId);
+      }
+    });
+  }
+
+  void _analyzeCurrentDecision() {
+    final project = _currentProject;
+    final decision = _selectedDecision;
+    if (decision == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Choose invest or walk away first.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _currentEvaluation = CryptoDecisionEngine.evaluate(
+        project: project,
+        selectedDecision: decision,
+        selectedActionIds: _selectedActionIds,
+        rationale: _reasoningController.text,
+      );
+    });
+  }
+
+  void _commitCurrentDecision() {
+    final decision = _selectedDecision;
+    if (decision == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Choose invest or walk away first.')),
+      );
+      return;
+    }
+
+    final evaluation =
+        _currentEvaluation ??
+        CryptoDecisionEngine.evaluate(
+          project: _currentProject,
+          selectedDecision: decision,
+          selectedActionIds: _selectedActionIds,
+          rationale: _reasoningController.text,
+        );
+    final invested = decision == SimTradeDecision.invest;
     final project = _currentProject;
     final nextBalance = invested
         ? _balance + project.outcomeIfInvested
@@ -157,11 +232,17 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
           lesson: project.lesson,
           dangerScore: project.dangerScore,
           wasScam: project.outcomeIfInvested < 0,
+          evaluationScore: evaluation.score,
+          evaluationVerdict: evaluation.verdict,
         ),
       );
       _balance = nextBalance;
       _savedLosses += savedLoss;
       _projectIndex += 1;
+      _currentEvaluation = null;
+      _selectedDecision = null;
+      _selectedActionIds.clear();
+      _reasoningController.clear();
     });
   }
 
@@ -171,7 +252,22 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
       _balance = _startingBalance;
       _savedLosses = 0;
       _decisions.clear();
+      _resetCurrentDecisionState(notify: false);
     });
+  }
+
+  void _resetCurrentDecisionState({bool notify = true}) {
+    final clear = () {
+      _selectedActionIds.clear();
+      _selectedDecision = null;
+      _currentEvaluation = null;
+      _reasoningController.clear();
+    };
+    if (notify) {
+      setState(clear);
+    } else {
+      clear();
+    }
   }
 }
 
@@ -334,21 +430,36 @@ class _ChartCard extends StatelessWidget {
 class _TrainingPanel extends StatelessWidget {
   const _TrainingPanel({
     required this.project,
-    required this.onSkip,
-    required this.onInvest,
+    required this.reasoningController,
+    required this.selectedActionIds,
+    required this.selectedDecision,
+    required this.evaluation,
+    required this.onToggleAction,
+    required this.onDecisionChanged,
+    required this.onAnalyze,
+    required this.onCommit,
+    required this.onReset,
   });
 
   final CryptoProject project;
-  final VoidCallback onSkip;
-  final VoidCallback onInvest;
+  final TextEditingController reasoningController;
+  final Set<String> selectedActionIds;
+  final SimTradeDecision? selectedDecision;
+  final CryptoDecisionEvaluation? evaluation;
+  final ValueChanged<String> onToggleAction;
+  final ValueChanged<SimTradeDecision> onDecisionChanged;
+  final VoidCallback onAnalyze;
+  final VoidCallback onCommit;
+  final VoidCallback onReset;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final investColor = project.outcomeIfInvested < 0
-        ? const Color(0xFFB13232)
-        : const Color(0xFF2E9A59);
+    final introColor = isDark
+        ? Colors.white.withValues(alpha: 0.72)
+        : const Color(0xFF4D6EA2);
+    final actionOptions = _decisionOptionsFor(project);
 
     return Container(
       decoration: BoxDecoration(
@@ -356,91 +467,164 @@ class _TrainingPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
       ),
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Decision Lab',
-            style: TextStyle(
-              color: isDark ? Colors.white : const Color(0xFF17376C),
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Decision Lab',
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF17376C),
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Ask yourself whether this looks investable or engineered to trap FOMO.',
-            style: TextStyle(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.72)
-                  : const Color(0xFF4D6EA2),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            title: 'Scam Pattern',
-            child: Text(
-              project.scamPattern,
-              style: const TextStyle(
-                color: Color(0xFF17376C),
+            const SizedBox(height: 8),
+            Text(
+              'Look for the warning signs, choose what you would do, explain your thinking, and then let the simulator judge the decision before the outcome is revealed.',
+              style: TextStyle(
+                color: introColor,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          _SectionCard(
-            title: 'Why People Fall For It',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: project.psychologyHooks
-                  .map(
-                    (hook) =>
-                        _BulletLine(text: hook, color: const Color(0xFFC48720)),
-                  )
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: investColor.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: investColor, width: 2),
-            ),
-            child: Text(
-              project.outcomeIfInvested < 0
-                  ? 'If you invested here, you would lose ${-project.outcomeIfInvested} simulation dollars.'
-                  : 'This one is relatively safer in the sim and would return +${project.outcomeIfInvested}.',
-              style: TextStyle(
-                color: investColor,
-                fontWeight: FontWeight.w800,
-                height: 1.3,
+            const SizedBox(height: 16),
+            _SectionCard(
+              title: 'Basic Hints And Signs',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _BulletLine(
+                    text: 'Pattern to recognize: ${project.scamPattern}',
+                    color: const Color(0xFFC48720),
+                  ),
+                  ...project.redFlags
+                      .take(2)
+                      .map(
+                        (flag) => _BulletLine(
+                          text: flag,
+                          color: const Color(0xFFB13232),
+                        ),
+                      ),
+                  ...project.safeChecks
+                      .take(2)
+                      .map(
+                        (check) => _BulletLine(
+                          text: check,
+                          color: const Color(0xFF245FBC),
+                        ),
+                      ),
+                ],
               ),
             ),
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onSkip,
-                  child: const Text('Skip / Walk Away'),
-                ),
+            const SizedBox(height: 12),
+            _SectionCard(
+              title: 'Why People Still Fall For It',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: project.psychologyHooks
+                    .map(
+                      (hook) => _BulletLine(
+                        text: hook,
+                        color: const Color(0xFFC48720),
+                      ),
+                    )
+                    .toList(),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onInvest,
-                  child: const Text('Invest'),
-                ),
+            ),
+            const SizedBox(height: 12),
+            _SectionCard(
+              title: 'Choose What You Would Do',
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: actionOptions
+                    .map(
+                      (option) => FilterChip(
+                        selected: selectedActionIds.contains(option.id),
+                        onSelected: (_) => onToggleAction(option.id),
+                        label: Text(option.label),
+                        tooltip: option.description,
+                      ),
+                    )
+                    .toList(),
               ),
+            ),
+            const SizedBox(height: 12),
+            _SectionCard(
+              title: 'Your Final Call',
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  ChoiceChip(
+                    selected: selectedDecision == SimTradeDecision.walkAway,
+                    onSelected: (_) =>
+                        onDecisionChanged(SimTradeDecision.walkAway),
+                    label: const Text('Walk away'),
+                  ),
+                  ChoiceChip(
+                    selected: selectedDecision == SimTradeDecision.invest,
+                    onSelected: (_) =>
+                        onDecisionChanged(SimTradeDecision.invest),
+                    label: const Text('Invest'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _SectionCard(
+              title: 'Explain Your Reasoning',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: reasoningController,
+                    minLines: 4,
+                    maxLines: 6,
+                    decoration: const InputDecoration(
+                      hintText:
+                          'Example: I would not invest because the team is anonymous, the audit is vague, and the urgency is doing the selling.',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'The simulator will look at your chosen actions and explanation. It only reveals the simulated gain or loss after you commit.',
+                    style: TextStyle(
+                      color: introColor,
+                      fontWeight: FontWeight.w700,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (evaluation != null) ...[
+              const SizedBox(height: 12),
+              _CryptoEvaluationCard(evaluation: evaluation!),
             ],
-          ),
-        ],
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                OutlinedButton(
+                  onPressed: onReset,
+                  child: const Text('Reset Choice'),
+                ),
+                ElevatedButton(
+                  onPressed: onAnalyze,
+                  child: const Text('Analyze Response'),
+                ),
+                ElevatedButton(
+                  onPressed: onCommit,
+                  child: const Text('Commit Decision'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -560,6 +744,14 @@ class _ResultsPanel extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${decision.evaluationVerdict} • Score ${decision.evaluationScore}/100',
+                    style: const TextStyle(
+                      color: Color(0xFF17376C),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     decision.lesson,
@@ -580,6 +772,72 @@ class _ResultsPanel extends StatelessWidget {
               onPressed: onRestart,
               child: const Text('Run Simulation Again'),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CryptoEvaluationCard extends StatelessWidget {
+  const _CryptoEvaluationCard({required this.evaluation});
+
+  final CryptoDecisionEvaluation evaluation;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final scoreColor = switch (evaluation.score) {
+      >= 85 => const Color(0xFF2E9A59),
+      >= 70 => const Color(0xFF245FBC),
+      >= 50 => const Color(0xFFC48720),
+      _ => const Color(0xFFB13232),
+    };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scoreColor.withValues(alpha: isDark ? 0.18 : 0.12),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: scoreColor, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${evaluation.verdict} • ${evaluation.score}/100',
+            style: TextStyle(
+              color: scoreColor,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            evaluation.summary,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF17376C),
+              fontWeight: FontWeight.w700,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...evaluation.feedback.map(
+            (item) => _BulletLine(text: item, color: scoreColor),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Recommended next steps',
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF17376C),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...evaluation.recommendedNextSteps.map(
+            (item) => _BulletLine(text: item, color: const Color(0xFF245FBC)),
           ),
         ],
       ),
@@ -882,6 +1140,8 @@ class InvestmentDecision {
     required this.lesson,
     required this.dangerScore,
     required this.wasScam,
+    required this.evaluationScore,
+    required this.evaluationVerdict,
   });
 
   final String projectName;
@@ -890,6 +1150,238 @@ class InvestmentDecision {
   final String lesson;
   final int dangerScore;
   final bool wasScam;
+  final int evaluationScore;
+  final String evaluationVerdict;
+}
+
+enum SimTradeDecision { invest, walkAway }
+
+class CryptoDecisionOption {
+  const CryptoDecisionOption({
+    required this.id,
+    required this.label,
+    required this.description,
+  });
+
+  final String id;
+  final String label;
+  final String description;
+}
+
+class CryptoDecisionEvaluation {
+  const CryptoDecisionEvaluation({
+    required this.score,
+    required this.verdict,
+    required this.summary,
+    required this.feedback,
+    required this.recommendedNextSteps,
+  });
+
+  final int score;
+  final String verdict;
+  final String summary;
+  final List<String> feedback;
+  final List<String> recommendedNextSteps;
+}
+
+class CryptoDecisionEngine {
+  const CryptoDecisionEngine._();
+
+  static CryptoDecisionEvaluation evaluate({
+    required CryptoProject project,
+    required SimTradeDecision selectedDecision,
+    required Set<String> selectedActionIds,
+    required String rationale,
+  }) {
+    final normalizedRationale = rationale.trim().toLowerCase();
+    final feedback = <String>[];
+    final nextSteps = <String>{};
+    final isSaferProject = project.outcomeIfInvested >= 0;
+    var score = isSaferProject ? 58 : 48;
+
+    switch (selectedDecision) {
+      case SimTradeDecision.walkAway:
+        if (isSaferProject) {
+          score += 6;
+          feedback.add(
+            'Walking away is conservative. That can still be reasonable when you are unsure, even if the project is not showing obvious scam markers.',
+          );
+        } else {
+          score += 26;
+          feedback.add(
+            'Avoiding a high-risk project is a strong protective choice when the warning signs outweigh the upside story.',
+          );
+        }
+      case SimTradeDecision.invest:
+        if (isSaferProject) {
+          score += 22;
+          feedback.add(
+            'Choosing to invest can be reasonable here because the project shows more verifiable fundamentals than the typical scam setup.',
+          );
+        } else {
+          score -= 28;
+          feedback.add(
+            'Investing into a project with strong scam markers exposes you to the exact trap the simulator is trying to teach you to catch.',
+          );
+          nextSteps.add(
+            'Pause before buying when the project is selling urgency, hype, or unverifiable trust signals.',
+          );
+        }
+    }
+
+    if (selectedActionIds.isEmpty) {
+      score -= 10;
+      feedback.add(
+        'You did not choose any due-diligence actions. In real trading, slowing down to verify details is part of the defense.',
+      );
+    }
+
+    for (final actionId in selectedActionIds) {
+      switch (actionId) {
+        case 'verify_team':
+        case 'read_audit':
+        case 'check_liquidity':
+        case 'review_tokenomics':
+        case 'wait_for_more_info':
+          score += 14;
+          feedback.add(
+            'That is a solid verification step because it checks fundamentals instead of trusting hype.',
+          );
+          nextSteps.add(
+            'Keep verifying claims through public documentation and blockchain-visible signals.',
+          );
+        case 'compare_official_contract':
+        case 'research_community':
+          score += 10;
+          feedback.add(
+            'Cross-checking official details and community behavior helps catch fake trust signals early.',
+          );
+        case 'buy_now':
+        case 'join_private_group':
+        case 'follow_influencer_call':
+          score -= 18;
+          feedback.add(
+            'Acting on hype, exclusivity, or urgency is how many crypto scams rush users past critical thinking.',
+          );
+          nextSteps.add(
+            'Do not let countdowns, VIP access, or influencer excitement replace verification.',
+          );
+        case 'connect_wallet':
+          score -= 26;
+          feedback.add(
+            'Connecting a wallet to a random crypto tool or sales funnel can lead to approval abuse or wallet-drain attacks.',
+          );
+          nextSteps.add(
+            'Never connect a wallet unless you understand exactly why it is needed and you trust the official site.',
+          );
+        case 'share_seed':
+          score -= 40;
+          feedback.add(
+            'No legitimate project, support channel, or opportunity should ever need your seed phrase or secret wallet recovery data.',
+          );
+          nextSteps.add('Keep recovery phrases offline and never share them.');
+      }
+    }
+
+    if (normalizedRationale.isNotEmpty) {
+      final safeSignals = <String, int>{
+        'anonymous': 12,
+        'audit': 10,
+        'liquidity': 12,
+        'locked': 8,
+        'team': 8,
+        'tokenomics': 10,
+        'verify': 10,
+        'research': 8,
+        'wait': 6,
+        'too risky': 14,
+        'walk away': 14,
+        'no guarantee': 8,
+        'pressure': 12,
+        'hype': 10,
+        'fomo': 14,
+        'scam': 12,
+      };
+      final riskySignals = <String, int>{
+        'guaranteed': -18,
+        'easy money': -18,
+        'moon': -12,
+        '100x': -18,
+        'trust the community': -12,
+        'everyone is buying': -14,
+        'quick profit': -18,
+        'send seed': -40,
+        'connect wallet': -22,
+        'buy now': -16,
+      };
+
+      var safeMatches = 0;
+      var riskyMatches = 0;
+
+      for (final entry in safeSignals.entries) {
+        if (normalizedRationale.contains(entry.key)) {
+          score += entry.value;
+          safeMatches += 1;
+        }
+      }
+
+      for (final entry in riskySignals.entries) {
+        if (normalizedRationale.contains(entry.key)) {
+          score += entry.value;
+          riskyMatches += 1;
+        }
+      }
+
+      if (safeMatches > 0) {
+        feedback.add(
+          'Your reasoning refers to concrete checks instead of vague hype, which is exactly the habit this simulator is training.',
+        );
+      }
+
+      if (riskyMatches > 0) {
+        feedback.add(
+          'Part of your reasoning still leans on emotional signals like urgency or fast profit, which attackers often exploit.',
+        );
+      }
+    } else {
+      score -= 6;
+      feedback.add(
+        'A short explanation helps reveal whether your decision was based on evidence or emotion.',
+      );
+    }
+
+    score = score.clamp(0, 100);
+
+    final verdict = switch (score) {
+      >= 85 => 'Excellent judgment',
+      >= 70 => 'Mostly safe',
+      >= 50 => 'Mixed response',
+      _ => 'High-risk response',
+    };
+
+    final summary = switch (score) {
+      >= 85 =>
+        'You approached the trade with strong scam awareness and focused on verifiable signals.',
+      >= 70 =>
+        'Your response was mostly safe, though a few choices could still be tightened before risking money.',
+      >= 50 =>
+        'You noticed some useful signs, but parts of the decision still leaned too heavily on uncertain or emotional signals.',
+      _ =>
+        'This response would leave you exposed in a real crypto scam because it trusts hype, urgency, or unsafe wallet behavior too quickly.',
+    };
+
+    if (nextSteps.isEmpty) {
+      nextSteps.addAll(project.safeChecks.take(3));
+    }
+
+    return CryptoDecisionEvaluation(
+      score: score,
+      verdict: verdict,
+      summary: summary,
+      feedback: feedback,
+      recommendedNextSteps: nextSteps.toList(growable: false),
+    );
+  }
 }
 
 class CandlePoint {
@@ -979,6 +1471,75 @@ class _CandlesPainter extends CustomPainter {
   bool shouldRepaint(covariant _CandlesPainter oldDelegate) {
     return oldDelegate.candles != candles || oldDelegate.isDark != isDark;
   }
+}
+
+List<CryptoDecisionOption> _decisionOptionsFor(CryptoProject project) {
+  final options = <CryptoDecisionOption>[
+    const CryptoDecisionOption(
+      id: 'verify_team',
+      label: 'Verify team',
+      description: 'Check whether the team is public, traceable, and credible.',
+    ),
+    const CryptoDecisionOption(
+      id: 'read_audit',
+      label: 'Read audit',
+      description: 'Look for a real linked audit instead of trusting a badge.',
+    ),
+    const CryptoDecisionOption(
+      id: 'check_liquidity',
+      label: 'Check liquidity',
+      description:
+          'See whether liquidity is locked or still under insider control.',
+    ),
+    const CryptoDecisionOption(
+      id: 'review_tokenomics',
+      label: 'Review tokenomics',
+      description:
+          'Inspect supply concentration, treasury, and vesting details.',
+    ),
+    const CryptoDecisionOption(
+      id: 'research_community',
+      label: 'Research community',
+      description:
+          'Check whether discussion looks organic or manipulated by hype.',
+    ),
+    const CryptoDecisionOption(
+      id: 'wait_for_more_info',
+      label: 'Wait',
+      description:
+          'Avoid rushing and gather more evidence before risking money.',
+    ),
+  ];
+
+  if (project.scamPattern.toLowerCase().contains('wallet-drain')) {
+    return <CryptoDecisionOption>[
+      ...options,
+      const CryptoDecisionOption(
+        id: 'connect_wallet',
+        label: 'Connect wallet',
+        description: 'Approve wallet access to unlock the opportunity.',
+      ),
+      const CryptoDecisionOption(
+        id: 'join_private_group',
+        label: 'Join VIP group',
+        description: 'Follow the exclusive access funnel to get the alpha.',
+      ),
+    ];
+  }
+
+  return <CryptoDecisionOption>[
+    ...options,
+    const CryptoDecisionOption(
+      id: 'buy_now',
+      label: 'Buy now',
+      description: 'Act immediately before the price moves.',
+    ),
+    const CryptoDecisionOption(
+      id: 'follow_influencer_call',
+      label: 'Follow hype',
+      description: 'Trust influencer excitement and community momentum.',
+    ),
+  ];
 }
 
 const List<CryptoProject> _projects = <CryptoProject>[
