@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/domain/auth_state.dart';
 import '../features/auth/presentation/pages/auth_loading_page.dart';
+import '../features/auth/presentation/pages/crypto_scam_sim.dart';
 import '../features/auth/presentation/pages/landing_page.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/signup_page.dart';
 import '../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../features/lessons/presentation/pages/lessons_page.dart';
 import '../features/quizzes/presentation/pages/quiz_page.dart';
 import '../features/simulators/presentation/pages/email_sim_page.dart';
 import '../features/simulators/presentation/pages/sms_sim_page.dart';
@@ -24,17 +26,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
       GoRoute(path: '/signup', builder: (_, __) => const SignupPage()),
       GoRoute(path: '/dashboard', builder: (_, __) => const DashboardPage()),
-      GoRoute(path: '/quiz', builder: (_, __) => const QuizPage()),
+      GoRoute(path: '/lessons', builder: (_, __) => const LessonsPage()),
+      GoRoute(
+        path: '/quiz',
+        builder: (_, state) =>
+            QuizPage(initialChapterId: state.uri.queryParameters['chapter']),
+      ),
+      GoRoute(
+        path: '/sim/crypto',
+        builder: (_, __) => const CryptoScamSimPage(),
+      ),
       GoRoute(path: '/sim/email', builder: (_, __) => const EmailSimPage()),
       GoRoute(path: '/sim/sms', builder: (_, __) => const SmsSimPage()),
     ],
     redirect: (_, state) {
       final location = state.matchedLocation;
-      final isGuestRoute = <String>{'/', '/landing', '/login', '/signup'}
-          .contains(location);
+      final isGuestRoute = <String>{
+        '/',
+        '/landing',
+        '/login',
+        '/signup',
+      }.contains(location);
       final isProtectedRoute = <String>{
         '/dashboard',
+        '/lessons',
         '/quiz',
+        '/sim/crypto',
         '/sim/email',
         '/sim/sms',
       }.contains(location);

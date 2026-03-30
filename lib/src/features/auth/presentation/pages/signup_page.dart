@@ -77,16 +77,13 @@ class _SignupPageState extends ConsumerState<SignupPage> {
           const SizedBox(height: 18),
           if (authState.status == AuthStatus.unauthenticated &&
               authState.errorMessage != null) ...[
-            SizedBox(
-              width: 320,
-              child: Text(
-                authState.errorMessage!,
-                style: const TextStyle(
-                  color: Color(0xFFFFB4B4),
-                  fontWeight: FontWeight.w700,
-                ),
-                textAlign: TextAlign.center,
+            Text(
+              authState.errorMessage!,
+              style: const TextStyle(
+                color: Color(0xFFFFB4B4),
+                fontWeight: FontWeight.w700,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),
           ],
@@ -134,10 +131,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
     setState(() => _isSubmitting = true);
     try {
-      await ref.read(authControllerProvider.notifier).register(
-            username: username,
-            password: password,
-          );
+      await ref
+          .read(authControllerProvider.notifier)
+          .register(username: username, password: password);
     } catch (error) {
       _showError(error.toString());
     } finally {
@@ -150,9 +146,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   void _showError(String message) {
     ref.read(authControllerProvider.notifier).setError(message);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -176,15 +172,12 @@ class _GuidanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 320,
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF0A2F61),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF284CFF),
-          width: 2,
-        ),
+        border: Border.all(color: const Color(0xFF284CFF), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,10 +195,7 @@ class _GuidanceCard extends StatelessWidget {
             met: usernameIsValid,
             label: 'Username is 3-20 chars with letters, numbers, or _',
           ),
-          _RequirementText(
-            met: hasMinLength,
-            label: 'At least 8 characters',
-          ),
+          _RequirementText(met: hasMinLength, label: 'At least 8 characters'),
           _RequirementText(
             met: hasUppercase,
             label: 'At least 1 uppercase letter',
@@ -214,14 +204,8 @@ class _GuidanceCard extends StatelessWidget {
             met: hasLowercase,
             label: 'At least 1 lowercase letter',
           ),
-          _RequirementText(
-            met: hasNumber,
-            label: 'At least 1 number',
-          ),
-          _RequirementText(
-            met: passwordsMatch,
-            label: 'Passwords match',
-          ),
+          _RequirementText(met: hasNumber, label: 'At least 1 number'),
+          _RequirementText(met: passwordsMatch, label: 'Passwords match'),
         ],
       ),
     );
@@ -229,10 +213,7 @@ class _GuidanceCard extends StatelessWidget {
 }
 
 class _RequirementText extends StatelessWidget {
-  const _RequirementText({
-    required this.met,
-    required this.label,
-  });
+  const _RequirementText({required this.met, required this.label});
 
   final bool met;
   final String label;

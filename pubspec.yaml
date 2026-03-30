@@ -1,7 +1,6 @@
 name: cs310_app
 description: CS310 Flutter app
 publish_to: 'none'
-uses-material-design: true
 
 environment:
   sdk: "^3.10.0"
@@ -23,3 +22,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+flutter:
+  uses-material-design: true

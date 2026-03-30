@@ -10,83 +10,146 @@ class DashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : const Color(0xFF17376C);
+    final mutedColor = isDark
+        ? Colors.white.withValues(alpha: 0.7)
+        : const Color(0xFF5A77A6);
+    final surfaceColor = isDark ? const Color(0xFF0A3C86) : Colors.white;
+
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final bool wide = constraints.maxWidth >= 900;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? const <Color>[Color(0xFF04153E), Color(0xFF08255E)]
+                : const <Color>[Color(0xFFF7FAFF), Color(0xFFEAF2FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 420),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) => Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 18 * (1 - value)),
+                child: child,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool wide = constraints.maxWidth >= 900;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Aman Hamidsha © 2025',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: mutedColor,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => context.go('/sim/email'),
+                              child: Ink(
+                                width: 80,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: appShadows(isDark),
+                                ),
+                                // TODO(hamidsha): Replace this text with a mail icon when you add icons back.
+                                child: Center(
+                                  child: Text(
+                                    'Email',
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white
+                                          : theme.colorScheme.onPrimary,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const ThemeToggleButton(),
+                        ],
+                      ),
+                      const SizedBox(height: 26),
                       Text(
-                        'Aman Hamidsha © 2025',
+                        'Welcome back.',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          color: titleColor,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                          height: 1.02,
+                          letterSpacing: -0.4,
                         ),
                       ),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => context.go('/sim/email'),
-                        child: Ink(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF3F73F8),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.mail_outline,
-                            size: 30,
-                            color: Colors.white,
-                          ),
+                      const SizedBox(height: 24),
+                      Expanded(
+                        child: wide
+                            ? const _WideLayout()
+                            : const _NarrowLayout(),
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            OutlinedButton(
+                              onPressed: () async {
+                                await ref
+                                    .read(authControllerProvider.notifier)
+                                    .signOut();
+                              },
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: surfaceColor.withValues(
+                                  alpha: isDark ? 0.22 : 0.9,
+                                ),
+                              ),
+                              child: const Text('Sign out'),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton(
+                              onPressed: () {},
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: surfaceColor.withValues(
+                                  alpha: isDark ? 0.22 : 0.9,
+                                ),
+                              ),
+                              child: const Text('Settings'),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      const ThemeToggleButton(),
                     ],
-                  ),
-                  const SizedBox(height: 30),
-                  Text(
-                    'Welcome back.',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.68),
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      height: 1.05,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Expanded(child: wide ? const _WideLayout() : const _NarrowLayout()),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          onPressed: () async {
-                            await ref.read(authControllerProvider.notifier).signOut();
-                          },
-                          icon: const Icon(Icons.logout, size: 34),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.settings_outlined, size: 38),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),
@@ -101,31 +164,39 @@ class _NarrowLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        const _SectionTitle('Lessons  📖'),
+        const _SectionTitle('Lessons'),
         const SizedBox(height: 10),
-        _LessonCard(onQuizTap: () => context.go('/quiz')),
+        _LessonsButton(onTap: () => context.go('/lessons')),
         const SizedBox(height: 18),
-        const _SectionTitle('Streak  🔥'),
+        const _SectionTitle('Streak'),
         const SizedBox(height: 10),
         const _SquareStatCard(title: '12 days'),
         const SizedBox(height: 18),
         const _SectionTitle('Simulators'),
         const SizedBox(height: 10),
-        Row(
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
           children: [
-            Expanded(
+            SizedBox(
+              width: 160,
               child: _SimButton(
                 label: 'E-Mail',
-                icon: Icons.mail_outline,
                 onTap: () => context.go('/sim/email'),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
+            SizedBox(
+              width: 160,
               child: _SimButton(
                 label: 'SMS',
-                icon: Icons.chat_bubble_outline,
                 onTap: () => context.go('/sim/sms'),
+              ),
+            ),
+            SizedBox(
+              width: 160,
+              child: _SimButton(
+                label: 'Crypto',
+                onTap: () => context.go('/sim/crypto'),
               ),
             ),
           ],
@@ -147,9 +218,9 @@ class _WideLayout extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _SectionTitle('Lessons  📖'),
+              const _SectionTitle('Lessons'),
               const SizedBox(height: 10),
-              Expanded(child: _LessonCard(onQuizTap: () => context.go('/quiz'))),
+              _LessonsButton(onTap: () => context.go('/lessons')),
             ],
           ),
         ),
@@ -159,7 +230,7 @@ class _WideLayout extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _SectionTitle('Streak  🔥'),
+              const _SectionTitle('Streak'),
               const SizedBox(height: 10),
               const _SquareStatCard(title: '12 days'),
               const SizedBox(height: 18),
@@ -167,14 +238,14 @@ class _WideLayout extends StatelessWidget {
               const SizedBox(height: 10),
               _SimButton(
                 label: 'E-Mail',
-                icon: Icons.mail_outline,
                 onTap: () => context.go('/sim/email'),
               ),
               const SizedBox(height: 12),
+              _SimButton(label: 'SMS', onTap: () => context.go('/sim/sms')),
+              const SizedBox(height: 12),
               _SimButton(
-                label: 'SMS',
-                icon: Icons.chat_bubble_outline,
-                onTap: () => context.go('/sim/sms'),
+                label: 'Crypto',
+                onTap: () => context.go('/sim/crypto'),
               ),
             ],
           ),
@@ -190,112 +261,66 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Text(
       text,
       style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w800,
-        color: Colors.white.withOpacity(0.48),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.48)
+            : const Color(0xFF5A77A6),
         height: 1,
       ),
     );
   }
 }
 
-class _LessonCard extends StatelessWidget {
-  const _LessonCard({required this.onQuizTap});
+class _LessonsButton extends StatelessWidget {
+  const _LessonsButton({required this.onTap});
 
-  final VoidCallback onQuizTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A3C86),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Review Last Lesson',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: Colors.white.withOpacity(0.45),
-              height: 1,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return SizedBox(
+      width: double.infinity,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0.96, end: 1),
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutBack,
+        builder: (context, value, child) =>
+            Transform.scale(scale: value, child: child),
+        child: ElevatedButton(
+          onPressed: onTap,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isDark
+                ? const Color(0xFF0A3C86)
+                : theme.colorScheme.primary,
+            foregroundColor: isDark
+                ? Colors.white
+                : theme.colorScheme.onPrimary,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            shadowColor: Colors.transparent,
+            elevation: 0,
+          ),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: appShadows(isDark),
+            ),
+            child: Container(
+              alignment: Alignment.center,
+              constraints: const BoxConstraints(minHeight: 28),
+              child: const Text('Go To Lessons'),
             ),
           ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF66AFFF).withOpacity(0.78),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    padding: const EdgeInsets.all(18),
-                    child: const Text(
-                      'Common Themes\nin Phishing\nEmails',
-                      style: TextStyle(
-                        color: Color(0xFF2D588F),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        height: 1.15,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                InkWell(
-                  onTap: onQuizTap,
-                  borderRadius: BorderRadius.circular(22),
-                  child: Container(
-                    width: 165,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF679FDC),
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                    child: Text(
-                      'Quiz\n✏️',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white.withOpacity(0.53),
-                        height: 1.1,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Lessons Completed: 26/60',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.45),
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              height: 1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: LinearProgressIndicator(
-              value: 26 / 60,
-              minHeight: 12,
-              backgroundColor: const Color(0xFFB4CCE6),
-              valueColor: const AlwaysStoppedAnimation(Color(0xFF337FDB)),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -308,11 +333,13 @@ class _SquareStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 150,
       decoration: BoxDecoration(
-        color: const Color(0xFF0A3C86),
+        color: isDark ? const Color(0xFF0A3C86) : Colors.white,
         borderRadius: BorderRadius.circular(30),
+        boxShadow: appShadows(isDark),
       ),
       child: Center(
         child: Text(
@@ -320,7 +347,9 @@ class _SquareStatCard extends StatelessWidget {
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w800,
-            color: Colors.white.withOpacity(0.48),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.48)
+                : const Color(0xFF17376C),
           ),
         ),
       ),
@@ -329,37 +358,53 @@ class _SquareStatCard extends StatelessWidget {
 }
 
 class _SimButton extends StatelessWidget {
-  const _SimButton({required this.label, required this.icon, required this.onTap});
+  const _SimButton({required this.label, required this.onTap});
 
   final String label;
-  final IconData icon;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(30),
+      splashColor: Theme.of(
+        context,
+      ).colorScheme.primary.withValues(alpha: 0.12),
       child: Container(
         height: 120,
         decoration: BoxDecoration(
-          color: const Color(0xFF0A3C86),
+          color: isDark ? const Color(0xFF0A3C86) : Colors.white,
           borderRadius: BorderRadius.circular(30),
+          boxShadow: appShadows(isDark),
         ),
         padding: const EdgeInsets.all(18),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               label,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: Colors.white.withOpacity(0.48),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.48)
+                    : const Color(0xFF17376C),
                 height: 1,
               ),
             ),
-            Icon(icon, size: 36, color: const Color(0xFF0A1A30)),
+            const SizedBox(height: 10),
+            // TODO(hamidsha): Reintroduce simulator icons here during a later polish pass.
+            const Text(
+              'Open module',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF5A77A6),
+              ),
+            ),
           ],
         ),
       ),

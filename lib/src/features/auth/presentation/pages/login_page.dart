@@ -46,16 +46,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           const SizedBox(height: 18),
           if (authState.status == AuthStatus.unauthenticated &&
               authState.errorMessage != null) ...[
-            SizedBox(
-              width: 320,
-              child: Text(
-                authState.errorMessage!,
-                style: const TextStyle(
-                  color: Color(0xFFFFB4B4),
-                  fontWeight: FontWeight.w700,
-                ),
-                textAlign: TextAlign.center,
+            Text(
+              authState.errorMessage!,
+              style: const TextStyle(
+                color: Color(0xFFFFB4B4),
+                fontWeight: FontWeight.w700,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),
           ],
