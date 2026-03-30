@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/theme.dart';
+import '../../domain/email_response_engine.dart';
+import '../../domain/email_sim_data.dart';
+import '../../domain/email_sim_models.dart';
 
 class EmailSimPage extends StatefulWidget {
   const EmailSimPage({super.key});
@@ -12,106 +15,195 @@ class EmailSimPage extends StatefulWidget {
 
 class _EmailSimPageState extends State<EmailSimPage> {
   int _selectedIndex = 0;
+  final Map<String, TextEditingController> _replyControllers =
+      <String, TextEditingController>{};
+  final Map<String, Set<String>> _selectedActionIds = <String, Set<String>>{};
+  final Map<String, EmailResponseEvaluation> _evaluations =
+      <String, EmailResponseEvaluation>{};
+
+  SimEmail get _selectedEmail => simEmails[_selectedIndex];
+
+  TextEditingController _controllerFor(String emailId) {
+    return _replyControllers.putIfAbsent(emailId, TextEditingController.new);
+  }
+
+  Set<String> _actionsFor(String emailId) {
+    return _selectedActionIds.putIfAbsent(emailId, () => <String>{});
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _replyControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final selectedEmail = _emails[_selectedIndex];
     final titleColor = isDark ? Colors.white : const Color(0xFF17376C);
     final subtitleColor = isDark
         ? Colors.white.withValues(alpha: 0.7)
         : const Color(0xFF365D9E);
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _TopButton(
-                    label: 'Back',
-                    onTap: () => context.go('/dashboard'),
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? const <Color>[Color(0xFF04153E), Color(0xFF0B2B66)]
+                : const <Color>[Color(0xFFF8FBFF), Color(0xFFEAF3FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _TopButton(
+                      label: 'Back',
+                      onTap: () => context.go('/dashboard'),
+                    ),
+                    const Spacer(),
+                    const ThemeToggleButton(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Email Simulator',
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    height: 1.02,
                   ),
-                  const Spacer(),
-                  const ThemeToggleButton(),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Email Simulator',
-                style: TextStyle(
-                  color: titleColor,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w800,
-                  height: 1.02,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Explore legit and scam emails, inspect the warning signs, and practice spotting phishing, pharming, bait, fake invoices, and impersonation.',
-                style: TextStyle(
-                  color: subtitleColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+                const SizedBox(height: 8),
+                Text(
+                  'Inspect realistic email scenarios, choose your actions, write the reply you would send, and let the response engine judge how safely you handled it.',
+                  style: TextStyle(
+                    color: subtitleColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 22),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final wide = constraints.maxWidth >= 980;
+                const SizedBox(height: 22),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final wide = constraints.maxWidth >= 980;
 
-                    if (wide) {
-                      return Row(
+                      if (wide) {
+                        return Row(
+                          children: [
+                            SizedBox(
+                              width: 340,
+                              child: _InboxPanel(
+                                emails: simEmails,
+                                selectedIndex: _selectedIndex,
+                                onSelect: (index) {
+                                  setState(() => _selectedIndex = index);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 18),
+                            Expanded(
+                              child: _EmailDetailPanel(
+                                email: _selectedEmail,
+                                controller: _controllerFor(_selectedEmail.id),
+                                selectedActionIds: _actionsFor(
+                                  _selectedEmail.id,
+                                ),
+                                evaluation: _evaluations[_selectedEmail.id],
+                                onToggleAction: (actionId) {
+                                  setState(() {
+                                    final actions = _actionsFor(
+                                      _selectedEmail.id,
+                                    );
+                                    if (!actions.add(actionId)) {
+                                      actions.remove(actionId);
+                                    }
+                                  });
+                                },
+                                onAnalyze: () => _analyzeEmail(_selectedEmail),
+                                onReset: () => _resetEmail(_selectedEmail.id),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+
+                      return Column(
                         children: [
                           SizedBox(
-                            width: 340,
+                            height: 280,
                             child: _InboxPanel(
-                              emails: _emails,
+                              emails: simEmails,
                               selectedIndex: _selectedIndex,
                               onSelect: (index) {
                                 setState(() => _selectedIndex = index);
                               },
                             ),
                           ),
-                          const SizedBox(width: 18),
+                          const SizedBox(height: 16),
                           Expanded(
-                            child: _EmailDetailPanel(email: selectedEmail),
+                            child: _EmailDetailPanel(
+                              email: _selectedEmail,
+                              controller: _controllerFor(_selectedEmail.id),
+                              selectedActionIds: _actionsFor(_selectedEmail.id),
+                              evaluation: _evaluations[_selectedEmail.id],
+                              onToggleAction: (actionId) {
+                                setState(() {
+                                  final actions = _actionsFor(
+                                    _selectedEmail.id,
+                                  );
+                                  if (!actions.add(actionId)) {
+                                    actions.remove(actionId);
+                                  }
+                                });
+                              },
+                              onAnalyze: () => _analyzeEmail(_selectedEmail),
+                              onReset: () => _resetEmail(_selectedEmail.id),
+                            ),
                           ),
                         ],
                       );
-                    }
-
-                    return Column(
-                      children: [
-                        SizedBox(
-                          height: 280,
-                          child: _InboxPanel(
-                            emails: _emails,
-                            selectedIndex: _selectedIndex,
-                            onSelect: (index) {
-                              setState(() => _selectedIndex = index);
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Expanded(
-                          child: _EmailDetailPanel(email: selectedEmail),
-                        ),
-                      ],
-                    );
-                  },
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  void _analyzeEmail(SimEmail email) {
+    final evaluation = EmailResponseEngine.evaluate(
+      email: email,
+      reply: _controllerFor(email.id).text,
+      selectedActionIds: _actionsFor(email.id),
+    );
+
+    setState(() {
+      _evaluations[email.id] = evaluation;
+    });
+  }
+
+  void _resetEmail(String emailId) {
+    setState(() {
+      _controllerFor(emailId).clear();
+      _actionsFor(emailId).clear();
+      _evaluations.remove(emailId);
+    });
   }
 }
 
@@ -135,6 +227,7 @@ class _InboxPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0A3C86) : Colors.white,
         borderRadius: BorderRadius.circular(30),
+        boxShadow: appShadows(isDark),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -150,7 +243,7 @@ class _InboxPanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Tap a message to inspect it.',
+            'Tap a message to inspect it and decide what to do.',
             style: TextStyle(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.7)
@@ -272,19 +365,33 @@ class _InboxItem extends StatelessWidget {
 }
 
 class _EmailDetailPanel extends StatelessWidget {
-  const _EmailDetailPanel({required this.email});
+  const _EmailDetailPanel({
+    required this.email,
+    required this.controller,
+    required this.selectedActionIds,
+    required this.evaluation,
+    required this.onToggleAction,
+    required this.onAnalyze,
+    required this.onReset,
+  });
 
   final SimEmail email;
+  final TextEditingController controller;
+  final Set<String> selectedActionIds;
+  final EmailResponseEvaluation? evaluation;
+  final ValueChanged<String> onToggleAction;
+  final VoidCallback onAnalyze;
+  final VoidCallback onReset;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0A3C86) : Colors.white,
         borderRadius: BorderRadius.circular(30),
+        boxShadow: appShadows(isDark),
       ),
       padding: const EdgeInsets.all(20),
       child: ListView(
@@ -301,7 +408,20 @@ class _EmailDetailPanel extends StatelessWidget {
           const SizedBox(height: 18),
           _MailHeader(email: email),
           const SizedBox(height: 18),
-          _MailBody(email: email),
+          _MailBody(email: email, draftReply: controller.text.trim()),
+          const SizedBox(height: 18),
+          _DecisionLab(
+            email: email,
+            controller: controller,
+            selectedActionIds: selectedActionIds,
+            onToggleAction: onToggleAction,
+            onAnalyze: onAnalyze,
+            onReset: onReset,
+          ),
+          if (evaluation != null) ...[
+            const SizedBox(height: 18),
+            _EvaluationCard(evaluation: evaluation!),
+          ],
           const SizedBox(height: 18),
           _SectionCard(
             title: 'Red Flags / Legitimacy Checks',
@@ -359,16 +479,6 @@ class _EmailDetailPanel extends StatelessWidget {
                       'Verify invoices, gift-card requests, and account warnings through official channels.',
                   color: Color(0xFF245FBC),
                 ),
-                _BulletLine(
-                  text:
-                      'A clean logo does not make an email real. Attackers copy branding all the time.',
-                  color: Color(0xFF245FBC),
-                ),
-                _BulletLine(
-                  text:
-                      'If the message pushes you to log in, type the real site yourself instead of using the email link.',
-                  color: Color(0xFF245FBC),
-                ),
               ],
             ),
           ),
@@ -385,8 +495,7 @@ class _MailHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -423,14 +532,14 @@ class _MailHeader extends StatelessWidget {
 }
 
 class _MailBody extends StatelessWidget {
-  const _MailBody({required this.email});
+  const _MailBody({required this.email, required this.draftReply});
 
   final SimEmail email;
+  final String draftReply;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -445,14 +554,241 @@ class _MailBody extends StatelessWidget {
               : const Color(0xFFD6E2F6),
         ),
       ),
-      child: SelectableText(
-        email.body,
-        style: TextStyle(
-          color: isDark ? Colors.white : const Color(0xFF17376C),
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-          height: 1.55,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SelectableText(
+            email.body,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF17376C),
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              height: 1.55,
+            ),
+          ),
+          if (draftReply.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2F73EA),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Text(
+                'Draft reply:\n$draftReply',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DecisionLab extends StatefulWidget {
+  const _DecisionLab({
+    required this.email,
+    required this.controller,
+    required this.selectedActionIds,
+    required this.onToggleAction,
+    required this.onAnalyze,
+    required this.onReset,
+  });
+
+  final SimEmail email;
+  final TextEditingController controller;
+  final Set<String> selectedActionIds;
+  final ValueChanged<String> onToggleAction;
+  final VoidCallback onAnalyze;
+  final VoidCallback onReset;
+
+  @override
+  State<_DecisionLab> createState() => _DecisionLabState();
+}
+
+class _DecisionLabState extends State<_DecisionLab> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_handleChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _DecisionLab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_handleChange);
+      widget.controller.addListener(_handleChange);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleChange);
+    super.dispose();
+  }
+
+  void _handleChange() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return _SectionCard(
+      title: 'Your Turn',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Choose actions, write the reply you would send, and analyze your email judgment.',
+            style: TextStyle(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.72)
+                  : const Color(0xFF4B6694),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: widget.email.decisionOptions
+                .map(
+                  (option) => FilterChip(
+                    label: Text(option.label),
+                    selected: widget.selectedActionIds.contains(option.id),
+                    onSelected: (_) => widget.onToggleAction(option.id),
+                    tooltip: option.description,
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: widget.controller,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText:
+                  'Type the reply you would send, or leave this blank if you would not respond directly.',
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              FilledButton(
+                onPressed: widget.onAnalyze,
+                child: const Text('Analyze Response'),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton(
+                onPressed: widget.onReset,
+                child: const Text('Reset'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EvaluationCard extends StatelessWidget {
+  const _EvaluationCard({required this.evaluation});
+
+  final EmailResponseEvaluation evaluation;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scoreColor = switch (evaluation.score) {
+      >= 85 => const Color(0xFF2E9A59),
+      >= 70 => const Color(0xFF2F73EA),
+      >= 50 => const Color(0xFFC48720),
+      _ => const Color(0xFFBF3D3D),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : const Color(0xFFF4F8FF),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: scoreColor, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: scoreColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'Score ${evaluation.score}/100',
+                  style: TextStyle(
+                    color: scoreColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  evaluation.verdict,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF17376C),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            evaluation.summary,
+            style: TextStyle(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.84)
+                  : const Color(0xFF17376C),
+              fontWeight: FontWeight.w700,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...evaluation.feedback.map(
+            (line) => _BulletLine(text: line, color: scoreColor),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Recommended next steps',
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF17376C),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...evaluation.recommendedNextSteps.map(
+            (line) => _BulletLine(text: line, color: const Color(0xFF245FBC)),
+          ),
+        ],
       ),
     );
   }
@@ -466,8 +802,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -650,7 +985,6 @@ class _TopButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: colorScheme.primary, width: 3),
         ),
-        // TODO(hamidsha): Replace this text with a back icon after your icon pass.
         child: Center(
           child: Text(
             label,
@@ -664,308 +998,3 @@ class _TopButton extends StatelessWidget {
     );
   }
 }
-
-enum EmailKind {
-  safe('Safe Example', Color(0xFF2E9A59)),
-  suspicious('Suspicious', Color(0xFFC48720)),
-  scam('Scam', Color(0xFFBF3D3D)),
-  phishing('Phishing', Color(0xFFB13232)),
-  pharming('Pharming / Redirect Risk', Color(0xFF7A3FC7));
-
-  const EmailKind(this.label, this.color);
-
-  final String label;
-  final Color color;
-}
-
-class SimEmail {
-  const SimEmail({
-    required this.sender,
-    required this.fromAddress,
-    required this.replyTo,
-    required this.toAddress,
-    required this.subject,
-    required this.preview,
-    required this.body,
-    required this.kind,
-    required this.technique,
-    required this.theme,
-    required this.riskLevel,
-    required this.flags,
-    required this.actions,
-  });
-
-  final String sender;
-  final String fromAddress;
-  final String replyTo;
-  final String toAddress;
-  final String subject;
-  final String preview;
-  final String body;
-  final EmailKind kind;
-  final String technique;
-  final String theme;
-  final String riskLevel;
-  final List<String> flags;
-  final List<String> actions;
-}
-
-const List<SimEmail> _emails = [
-  SimEmail(
-    sender: 'Campus IT Support',
-    fromAddress: 'support@cs310-university.edu',
-    replyTo: 'support@cs310-university.edu',
-    toAddress: 'student@uni.edu',
-    subject: 'Scheduled Password Reset Reminder',
-    preview:
-        'This is your normal semester reminder to review your password and MFA settings.',
-    body:
-        'Hello,\n\nAs part of our routine semester security review, please check that your account recovery email and MFA settings are up to date.\n\nDo not use links from unexpected messages. Instead, open the student portal directly from your usual bookmark.\n\nRegards,\nCampus IT Support',
-    kind: EmailKind.safe,
-    technique: 'Legit security notice',
-    theme: 'Routine account hygiene',
-    riskLevel: 'Low risk',
-    flags: [
-      'The domain matches the institution and the reply-to also matches.',
-      'There is no panic language, threat, or unrealistic deadline.',
-      'The message tells you to go to the portal directly instead of pushing a shortcut link.',
-      'The wording is consistent and does not ask for passwords or codes.',
-    ],
-    actions: [
-      'You can still verify it in the normal portal if you want.',
-      'Use your saved bookmark rather than any email link.',
-      'Treat even real emails as prompts, not as login pathways.',
-    ],
-  ),
-  SimEmail(
-    sender: 'Microsoft Account Team',
-    fromAddress: 'security-alert@micr0softverify-login.com',
-    replyTo: 'resetforms@micr0softverify-login.com',
-    toAddress: 'student@uni.edu',
-    subject: 'URGENT: Your Microsoft 365 mailbox will be disabled today',
-    preview:
-        'Your account has triggered abnormal activity. Verify immediately to avoid permanent shutdown.',
-    body:
-        'Dear User,\n\nWe detected malicious sign in activity from Russia and your Microsoft 365 mailbox will be disabled in 45 minutes unless you verify ownership.\n\nClick below immediately:\nhttps://microsoft-check-session-security.com/recover\n\nFailure to comply will result in message deletion and access suspension.\n\nMicrosoft Account Security Team',
-    kind: EmailKind.phishing,
-    technique: 'Credential harvesting',
-    theme: 'Urgent account warning',
-    riskLevel: 'High risk',
-    flags: [
-      'The sender domain is not Microsoft. It uses a lookalike word and extra login-themed wording.',
-      'The message creates urgency, fear, and a fake countdown to pressure a rushed click.',
-      'Generic greeting like “Dear User” is common in mass phishing.',
-      'The link domain does not match the brand being claimed.',
-    ],
-    actions: [
-      'Do not click the link or enter credentials.',
-      'Open the real Microsoft account page manually if you want to confirm.',
-      'Report and delete the email.',
-    ],
-  ),
-  SimEmail(
-    sender: 'HR Payroll Office',
-    fromAddress: 'payroll@company-payroll-help.net',
-    replyTo: 'forms@company-payroll-help.net',
-    toAddress: 'employee@company.com',
-    subject: 'Updated direct deposit form required before payroll close',
-    preview: 'Please submit your banking details by 3 PM to avoid salary hold.',
-    body:
-        'Hi,\n\nWe are migrating salary processing. Every staff member must complete the attached bank verification form today before 3 PM. Employees who fail to respond may see delayed wages.\n\nOpen Attachment: Payroll_Update_Form.html\n\nPayroll Desk',
-    kind: EmailKind.scam,
-    technique: 'Fake payroll update / attachment lure',
-    theme: 'Sensitive data theft',
-    riskLevel: 'High risk',
-    flags: [
-      'It asks for banking information under deadline pressure.',
-      'The sender domain is not the organization domain.',
-      'An HTML attachment can open a fake sign-in or data collection page.',
-      'Threatening salary delay is a classic compliance pressure tactic.',
-    ],
-    actions: [
-      'Verify with payroll using the known phone number or company chat.',
-      'Do not open the attachment.',
-      'Report it internally as a payroll phishing attempt.',
-    ],
-  ),
-  SimEmail(
-    sender: 'Delivery Notifications',
-    fromAddress: 'tracking@parcel-redelivery-center.com',
-    replyTo: 'tracking@parcel-redelivery-center.com',
-    toAddress: 'student@uni.edu',
-    subject: 'Package delivery failed - small redelivery fee required',
-    preview:
-        'A £1.79 fee is needed to release your parcel. Update details now.',
-    body:
-        'Customer,\n\nYour package could not be delivered due to missing address validation. To schedule redelivery, pay the small processing fee below.\n\nPay Fee Now\n\nIf you do not confirm today, your package will be returned.\n\nParcel Dispatch Team',
-    kind: EmailKind.scam,
-    technique: 'Micro-payment bait',
-    theme: 'Fake parcel redelivery',
-    riskLevel: 'Medium to high risk',
-    flags: [
-      'Unexpected package alerts are often used to lure card details.',
-      'The sender is vague and not linked to a known delivery provider.',
-      'A tiny fee is meant to feel harmless while capturing card data.',
-      'No shipment reference or official order context is provided.',
-    ],
-    actions: [
-      'Check your real order history in the retailer or courier app.',
-      'Never pay through the email shortcut.',
-      'Delete or report the message if no shipment is expected.',
-    ],
-  ),
-  SimEmail(
-    sender: 'Bank Fraud Prevention',
-    fromAddress: 'alerts@mysecure-bank-alerts.net',
-    replyTo: 'alerts@mysecure-bank-alerts.net',
-    toAddress: 'customer@bankmail.com',
-    subject: 'Suspicious transfer blocked - confirm device now',
-    preview:
-        'Unrecognized sign-in attempt detected. Failure to confirm may freeze your account.',
-    body:
-        'Customer,\n\nA suspicious transfer was blocked from a new device. Use the secure confirmation link to validate your banking profile.\n\nSecure Banking Portal\n\nFor your safety, do not ignore this alert.\n\nFraud Team',
-    kind: EmailKind.phishing,
-    technique: 'Financial login phish',
-    theme: 'Fake fraud alert',
-    riskLevel: 'High risk',
-    flags: [
-      'The display name sounds official but the domain is not the bank domain.',
-      'Attackers often abuse “fraud prevention” language because users react quickly.',
-      'The email wants immediate account interaction through its own path.',
-      'There is no proper personalization or official case number.',
-    ],
-    actions: [
-      'Do not use the provided link.',
-      'Open the official banking app directly to review account activity.',
-      'If worried, call the number from the back of your card or official site.',
-    ],
-  ),
-  SimEmail(
-    sender: 'Streaming Support',
-    fromAddress: 'support@netf1ix-billing-check.com',
-    replyTo: 'billing@netf1ix-billing-check.com',
-    toAddress: 'viewer@mail.com',
-    subject: 'Your subscription has been paused due to billing error',
-    preview:
-        'We were unable to process your payment. Update card details to continue watching.',
-    body:
-        'Hello,\n\nYour subscription could not be renewed. To restore service, update payment details through the account form below.\n\nRestore My Account\n\nThank you,\nCustomer Billing Support',
-    kind: EmailKind.phishing,
-    technique: 'Brand impersonation',
-    theme: 'Fake billing problem',
-    riskLevel: 'High risk',
-    flags: [
-      'The brand name is misspelled in the domain with a number replacing a letter.',
-      'Billing-problem emails are common because users expect subscriptions to renew.',
-      'The message funnels you straight to a card-update page.',
-      'Real services usually address you by account name and reference their own domain.',
-    ],
-    actions: [
-      'Check your subscription inside the real app or website.',
-      'Never update payment details from a suspicious email.',
-      'Mark the message as phishing.',
-    ],
-  ),
-  SimEmail(
-    sender: 'Travel Booking Desk',
-    fromAddress: 'offers@flysmart-discounts.co',
-    replyTo: 'offers@flysmart-discounts.co',
-    toAddress: 'user@mail.com',
-    subject: 'Free business class upgrade for the first 200 responders',
-    preview:
-        'Claim your upgrade and luggage bonus by confirming your travel account today.',
-    body:
-        'Congratulations!\n\nYou have been selected for a premium travel loyalty upgrade. To activate, sign in through the portal below and confirm your passport details.\n\nActivate Upgrade Now\n\nOffer ends in 2 hours.',
-    kind: EmailKind.scam,
-    technique: 'Reward bait / personal data theft',
-    theme: 'Too-good-to-be-true offer',
-    riskLevel: 'High risk',
-    flags: [
-      'Unexpected freebies and scarcity are classic bait tactics.',
-      'The message asks for passport details, which is highly sensitive.',
-      'There is no real booking reference or traveler context.',
-      '“First 200 responders” is designed to override caution.',
-    ],
-    actions: [
-      'Do not provide identity details from marketing emails.',
-      'Verify offers only in your official airline account.',
-      'Treat sudden reward claims with heavy suspicion.',
-    ],
-  ),
-  SimEmail(
-    sender: 'University Library',
-    fromAddress: 'library@cs310-university.edu',
-    replyTo: 'library@cs310-university.edu',
-    toAddress: 'student@uni.edu',
-    subject: 'Reserved book is ready for collection',
-    preview: 'Your requested book is available at the main desk until Friday.',
-    body:
-        'Hi Hamid,\n\nYour reserved copy of “Digital Security Fundamentals” is now available for pickup at the main library desk until Friday at 5 PM.\n\nYou do not need to log in from this email. Bring your student ID when collecting.\n\nLibrary Services',
-    kind: EmailKind.safe,
-    technique: 'Legit service update',
-    theme: 'Normal campus notification',
-    riskLevel: 'Low risk',
-    flags: [
-      'The sender and reply-to match the institution.',
-      'It does not ask for credentials, payment, or urgent action.',
-      'The message includes a sensible real-world next step instead of a login shortcut.',
-      'The tone is specific, calm, and context-based.',
-    ],
-    actions: [
-      'This looks reasonable, but you can still verify in the library portal if needed.',
-      'Good legitimate emails usually do not force secretive or rushed behavior.',
-    ],
-  ),
-  SimEmail(
-    sender: 'Secure DNS Warning Center',
-    fromAddress: 'notice@dns-traffic-protect.info',
-    replyTo: 'notice@dns-traffic-protect.info',
-    toAddress: 'user@mail.com',
-    subject: 'Important: your home router may redirect banking pages',
-    preview:
-        'We detected your device may be using unsafe DNS. Install the router fix file immediately.',
-    body:
-        'User,\n\nYour internet route may have been changed and financial websites can be silently redirected. Install the router protection utility attached below and sign in to verify your network.\n\nAttachment: RouterFix.zip\n\nSecurity Notice Center',
-    kind: EmailKind.pharming,
-    technique: 'Pharming-themed malware lure',
-    theme: 'Fake router / DNS fix',
-    riskLevel: 'High risk',
-    flags: [
-      'It references a real fear, pharming, but uses that fear to push an unsafe attachment.',
-      'A ZIP attachment claiming to fix your router is a major warning sign.',
-      'Unknown “security centers” are often fabricated to sound technical.',
-      'Real router or ISP guidance would point you to official support pages, not random compressed tools.',
-    ],
-    actions: [
-      'Do not open the ZIP file.',
-      'If you are worried about router compromise, log in to the router using your known local address or official vendor guide.',
-      'Reset DNS settings only through trusted device or router settings.',
-    ],
-  ),
-  SimEmail(
-    sender: 'CEO Office',
-    fromAddress: 'ceo.office@corp-executive-mail.com',
-    replyTo: 'ceo.office@corp-executive-mail.com',
-    toAddress: 'assistant@company.com',
-    subject: 'Need 6 gift cards for client appreciation before 2 PM',
-    preview:
-        'I am in meetings. Buy them now and send the codes by reply email.',
-    body:
-        'Hi,\n\nI am tied up in back-to-back meetings and need six gift cards for a client appreciation package. Buy them now and email me the codes before 2 PM. I will reimburse you later.\n\nPlease keep this between us so we can handle it quickly.\n\nCEO',
-    kind: EmailKind.scam,
-    technique: 'Executive impersonation / BEC',
-    theme: 'Gift card fraud',
-    riskLevel: 'High risk',
-    flags: [
-      'Gift card requests plus secrecy are a major business email compromise sign.',
-      'The sender domain is not the corporate domain.',
-      'Attackers often impersonate executives to bypass normal approval processes.',
-      '“Keep this between us” is meant to stop verification.',
-    ],
-    actions: [
-      'Verify any unusual request with the executive using a known contact method.',
-      'Never send gift card codes or financial details only by email instruction.',
-      'Escalate it internally as an impersonation attempt.',
-    ],
-  ),
-];

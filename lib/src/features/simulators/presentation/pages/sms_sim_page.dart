@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/theme.dart';
+import '../../domain/sms_response_engine.dart';
+import '../../domain/sms_sim_data.dart';
+import '../../domain/sms_sim_models.dart';
 
 class SmsSimPage extends StatefulWidget {
   const SmsSimPage({super.key});
@@ -12,12 +15,34 @@ class SmsSimPage extends StatefulWidget {
 
 class _SmsSimPageState extends State<SmsSimPage> {
   int _selectedIndex = 0;
+  final Map<String, TextEditingController> _replyControllers =
+      <String, TextEditingController>{};
+  final Map<String, Set<String>> _selectedActionIds = <String, Set<String>>{};
+  final Map<String, SmsResponseEvaluation> _evaluations =
+      <String, SmsResponseEvaluation>{};
+
+  SmsThread get _selectedThread => smsThreads[_selectedIndex];
+
+  TextEditingController _controllerFor(String threadId) {
+    return _replyControllers.putIfAbsent(threadId, TextEditingController.new);
+  }
+
+  Set<String> _actionsFor(String threadId) {
+    return _selectedActionIds.putIfAbsent(threadId, () => <String>{});
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _replyControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final selectedThread = _threads[_selectedIndex];
     final titleColor = isDark ? Colors.white : const Color(0xFF17376C);
     final subtitleColor = isDark
         ? Colors.white.withValues(alpha: 0.7)
@@ -62,7 +87,7 @@ class _SmsSimPageState extends State<SmsSimPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Review realistic text-message scams and safe messages. Practice spotting smishing, delivery fraud, fake bank alerts, job bait, and account verification traps.',
+                  'Act inside a realistic texting interface. Pick what to do, write your reply, and let the response engine judge how safely you handled the scenario.',
                   style: TextStyle(
                     color: subtitleColor,
                     fontSize: 16,
@@ -81,7 +106,7 @@ class _SmsSimPageState extends State<SmsSimPage> {
                             SizedBox(
                               width: 350,
                               child: _ThreadListPanel(
-                                threads: _threads,
+                                threads: smsThreads,
                                 selectedIndex: _selectedIndex,
                                 onSelect: (index) {
                                   setState(() => _selectedIndex = index);
@@ -90,7 +115,27 @@ class _SmsSimPageState extends State<SmsSimPage> {
                             ),
                             const SizedBox(width: 18),
                             Expanded(
-                              child: _ThreadDetailPanel(thread: selectedThread),
+                              child: _ThreadDetailPanel(
+                                thread: _selectedThread,
+                                controller: _controllerFor(_selectedThread.id),
+                                selectedActionIds: _actionsFor(
+                                  _selectedThread.id,
+                                ),
+                                evaluation: _evaluations[_selectedThread.id],
+                                onToggleAction: (actionId) {
+                                  setState(() {
+                                    final actions = _actionsFor(
+                                      _selectedThread.id,
+                                    );
+                                    if (!actions.add(actionId)) {
+                                      actions.remove(actionId);
+                                    }
+                                  });
+                                },
+                                onAnalyze: () =>
+                                    _analyzeThread(_selectedThread),
+                                onReset: () => _resetThread(_selectedThread.id),
+                              ),
                             ),
                           ],
                         );
@@ -101,7 +146,7 @@ class _SmsSimPageState extends State<SmsSimPage> {
                           SizedBox(
                             height: 290,
                             child: _ThreadListPanel(
-                              threads: _threads,
+                              threads: smsThreads,
                               selectedIndex: _selectedIndex,
                               onSelect: (index) {
                                 setState(() => _selectedIndex = index);
@@ -110,7 +155,26 @@ class _SmsSimPageState extends State<SmsSimPage> {
                           ),
                           const SizedBox(height: 16),
                           Expanded(
-                            child: _ThreadDetailPanel(thread: selectedThread),
+                            child: _ThreadDetailPanel(
+                              thread: _selectedThread,
+                              controller: _controllerFor(_selectedThread.id),
+                              selectedActionIds: _actionsFor(
+                                _selectedThread.id,
+                              ),
+                              evaluation: _evaluations[_selectedThread.id],
+                              onToggleAction: (actionId) {
+                                setState(() {
+                                  final actions = _actionsFor(
+                                    _selectedThread.id,
+                                  );
+                                  if (!actions.add(actionId)) {
+                                    actions.remove(actionId);
+                                  }
+                                });
+                              },
+                              onAnalyze: () => _analyzeThread(_selectedThread),
+                              onReset: () => _resetThread(_selectedThread.id),
+                            ),
                           ),
                         ],
                       );
@@ -123,6 +187,26 @@ class _SmsSimPageState extends State<SmsSimPage> {
         ),
       ),
     );
+  }
+
+  void _analyzeThread(SmsThread thread) {
+    final evaluation = SmsResponseEngine.evaluate(
+      thread: thread,
+      reply: _controllerFor(thread.id).text,
+      selectedActionIds: _actionsFor(thread.id),
+    );
+
+    setState(() {
+      _evaluations[thread.id] = evaluation;
+    });
+  }
+
+  void _resetThread(String threadId) {
+    setState(() {
+      _controllerFor(threadId).clear();
+      _actionsFor(threadId).clear();
+      _evaluations.remove(threadId);
+    });
   }
 }
 
@@ -162,7 +246,7 @@ class _ThreadListPanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Tap a thread to inspect the conversation.',
+            'Tap a thread to inspect it and decide what to do.',
             style: TextStyle(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.7)
@@ -285,9 +369,23 @@ class _ThreadPreviewCard extends StatelessWidget {
 }
 
 class _ThreadDetailPanel extends StatelessWidget {
-  const _ThreadDetailPanel({required this.thread});
+  const _ThreadDetailPanel({
+    required this.thread,
+    required this.controller,
+    required this.selectedActionIds,
+    required this.evaluation,
+    required this.onToggleAction,
+    required this.onAnalyze,
+    required this.onReset,
+  });
 
   final SmsThread thread;
+  final TextEditingController controller;
+  final Set<String> selectedActionIds;
+  final SmsResponseEvaluation? evaluation;
+  final ValueChanged<String> onToggleAction;
+  final VoidCallback onAnalyze;
+  final VoidCallback onReset;
 
   @override
   Widget build(BuildContext context) {
@@ -314,7 +412,20 @@ class _ThreadDetailPanel extends StatelessWidget {
           const SizedBox(height: 18),
           _ConversationHeader(thread: thread),
           const SizedBox(height: 18),
-          _ChatTranscript(thread: thread),
+          _ChatTranscript(thread: thread, draftReply: controller.text.trim()),
+          const SizedBox(height: 18),
+          _DecisionLab(
+            thread: thread,
+            controller: controller,
+            selectedActionIds: selectedActionIds,
+            onToggleAction: onToggleAction,
+            onAnalyze: onAnalyze,
+            onReset: onReset,
+          ),
+          if (evaluation != null) ...[
+            const SizedBox(height: 18),
+            _EvaluationCard(evaluation: evaluation!),
+          ],
           const SizedBox(height: 18),
           _SectionCard(
             title: 'Red Flags / Legitimacy Checks',
@@ -345,40 +456,6 @@ class _ThreadDetailPanel extends StatelessWidget {
                     ),
                   )
                   .toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const _SectionCard(
-            title: 'Smishing Checklist',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _BulletLine(
-                  text:
-                      'Unexpected urgency, delivery issues, bank warnings, and prize claims are common SMS scam hooks.',
-                  color: Color(0xFF245FBC),
-                ),
-                _BulletLine(
-                  text:
-                      'Shortened links and lookalike domains are designed to hide the real destination.',
-                  color: Color(0xFF245FBC),
-                ),
-                _BulletLine(
-                  text:
-                      'Real organizations rarely ask you to confirm passwords, MFA codes, or payment details by text.',
-                  color: Color(0xFF245FBC),
-                ),
-                _BulletLine(
-                  text:
-                      'Use the official app, website, or phone number you already trust instead of the one in the message.',
-                  color: Color(0xFF245FBC),
-                ),
-                _BulletLine(
-                  text:
-                      'If the message mentions legal trouble, package fees, or frozen access, slow down and verify first.',
-                  color: Color(0xFF245FBC),
-                ),
-              ],
             ),
           ),
         ],
@@ -428,9 +505,10 @@ class _ConversationHeader extends StatelessWidget {
 }
 
 class _ChatTranscript extends StatelessWidget {
-  const _ChatTranscript({required this.thread});
+  const _ChatTranscript({required this.thread, required this.draftReply});
 
   final SmsThread thread;
+  final String draftReply;
 
   @override
   Widget build(BuildContext context) {
@@ -450,9 +528,17 @@ class _ChatTranscript extends StatelessWidget {
         ),
       ),
       child: Column(
-        children: thread.messages
-            .map((message) => _SmsBubble(message: message))
-            .toList(),
+        children: [
+          ...thread.messages.map((message) => _SmsBubble(message: message)),
+          if (draftReply.isNotEmpty)
+            _SmsBubble(
+              message: SmsMessage(
+                text: draftReply,
+                timestamp: 'Draft reply',
+                incoming: false,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -513,6 +599,209 @@ class _SmsBubble extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DecisionLab extends StatefulWidget {
+  const _DecisionLab({
+    required this.thread,
+    required this.controller,
+    required this.selectedActionIds,
+    required this.onToggleAction,
+    required this.onAnalyze,
+    required this.onReset,
+  });
+
+  final SmsThread thread;
+  final TextEditingController controller;
+  final Set<String> selectedActionIds;
+  final ValueChanged<String> onToggleAction;
+  final VoidCallback onAnalyze;
+  final VoidCallback onReset;
+
+  @override
+  State<_DecisionLab> createState() => _DecisionLabState();
+}
+
+class _DecisionLabState extends State<_DecisionLab> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_handleChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _DecisionLab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_handleChange);
+      widget.controller.addListener(_handleChange);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleChange);
+    super.dispose();
+  }
+
+  void _handleChange() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return _SectionCard(
+      title: 'Your Turn',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Choose one or more actions, write a reply if you want, then run the response engine.',
+            style: TextStyle(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.72)
+                  : const Color(0xFF4B6694),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: widget.thread.decisionOptions
+                .map(
+                  (option) => FilterChip(
+                    label: Text(option.label),
+                    selected: widget.selectedActionIds.contains(option.id),
+                    onSelected: (_) => widget.onToggleAction(option.id),
+                    tooltip: option.description,
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: widget.controller,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText:
+                  'Type the reply you would send, or leave this blank if your action is not to reply.',
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              FilledButton(
+                onPressed: widget.onAnalyze,
+                child: const Text('Analyze Response'),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton(
+                onPressed: widget.onReset,
+                child: const Text('Reset'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EvaluationCard extends StatelessWidget {
+  const _EvaluationCard({required this.evaluation});
+
+  final SmsResponseEvaluation evaluation;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scoreColor = switch (evaluation.score) {
+      >= 85 => const Color(0xFF2E9A59),
+      >= 70 => const Color(0xFF2F73EA),
+      >= 50 => const Color(0xFFC48720),
+      _ => const Color(0xFFBF3D3D),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : const Color(0xFFF4F8FF),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: scoreColor, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: scoreColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'Score ${evaluation.score}/100',
+                  style: TextStyle(
+                    color: scoreColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  evaluation.verdict,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF17376C),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            evaluation.summary,
+            style: TextStyle(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.84)
+                  : const Color(0xFF17376C),
+              fontWeight: FontWeight.w700,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...evaluation.feedback.map(
+            (line) => _BulletLine(text: line, color: scoreColor),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Recommended next steps',
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF17376C),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...evaluation.recommendedNextSteps.map(
+            (line) => _BulletLine(text: line, color: const Color(0xFF245FBC)),
+          ),
+        ],
       ),
     );
   }
@@ -722,252 +1011,3 @@ class _TopButton extends StatelessWidget {
     );
   }
 }
-
-enum SmsKind {
-  safe('Safe Example', Color(0xFF2E9A59)),
-  suspicious('Suspicious', Color(0xFFC48720)),
-  scam('Scam', Color(0xFFBF3D3D)),
-  smishing('Smishing', Color(0xFFB13232)),
-  fraud('Fraud Alert', Color(0xFF7A3FC7));
-
-  const SmsKind(this.label, this.color);
-
-  final String label;
-  final Color color;
-}
-
-class SmsThread {
-  const SmsThread({
-    required this.contact,
-    required this.phoneNumber,
-    required this.preview,
-    required this.kind,
-    required this.scamType,
-    required this.scenario,
-    required this.riskLevel,
-    required this.timeLabel,
-    required this.messages,
-    required this.flags,
-    required this.actions,
-  });
-
-  final String contact;
-  final String phoneNumber;
-  final String preview;
-  final SmsKind kind;
-  final String scamType;
-  final String scenario;
-  final String riskLevel;
-  final String timeLabel;
-  final List<SmsMessage> messages;
-  final List<String> flags;
-  final List<String> actions;
-}
-
-class SmsMessage {
-  const SmsMessage({
-    required this.text,
-    required this.timestamp,
-    required this.incoming,
-  });
-
-  final String text;
-  final String timestamp;
-  final bool incoming;
-}
-
-const List<SmsThread> _threads = [
-  SmsThread(
-    contact: 'Campus Safety',
-    phoneNumber: '+44 7700 900111',
-    preview:
-        'Routine campus weather update and timetable reminder for tomorrow morning.',
-    kind: SmsKind.safe,
-    scamType: 'Legitimate service alert',
-    scenario: 'General campus information',
-    riskLevel: 'Low risk',
-    timeLabel: '09:14',
-    messages: [
-      SmsMessage(
-        text:
-            'Campus Safety: Light snow expected after 7AM. Please leave extra time for travel and check your timetable in the official student app if needed.',
-        timestamp: '09:12',
-        incoming: true,
-      ),
-      SmsMessage(
-        text: 'Thanks, I will check the app before leaving.',
-        timestamp: '09:14',
-        incoming: false,
-      ),
-    ],
-    flags: [
-      'The message is informational and does not create panic or demand immediate action.',
-      'It points you toward the normal student app rather than a random login link.',
-      'No passwords, codes, or payment requests are involved.',
-    ],
-    actions: [
-      'Open the official app yourself if you want to verify the update.',
-      'Treat even real texts as prompts, not direct login pathways.',
-      'Keep using your known official channels for timetable or safety information.',
-    ],
-  ),
-  SmsThread(
-    contact: 'Royal Mail Parcel',
-    phoneNumber: '+44 7412 113580',
-    preview:
-        'Your parcel is held due to an unpaid redelivery fee. Pay now to avoid return.',
-    kind: SmsKind.smishing,
-    scamType: 'Delivery fee scam',
-    scenario: 'Package redelivery bait',
-    riskLevel: 'High risk',
-    timeLabel: '11:03',
-    messages: [
-      SmsMessage(
-        text:
-            'RoyalMail: We could not deliver your parcel today. A £1.45 redelivery fee is due. Pay now at rm-fees-track-parcel.com to avoid return.',
-        timestamp: '11:01',
-        incoming: true,
-      ),
-      SmsMessage(
-        text: 'What parcel is this for?',
-        timestamp: '11:03',
-        incoming: false,
-      ),
-      SmsMessage(
-        text:
-            'Final notice: your parcel will be destroyed if you do not complete payment in the next 20 minutes.',
-        timestamp: '11:04',
-        incoming: true,
-      ),
-    ],
-    flags: [
-      'The domain does not match the official organization and uses fee-themed wording to look believable.',
-      'Tiny payment amounts are common because they make people drop their guard.',
-      'The message creates urgency and consequences to force a quick click.',
-      'Scammers often send follow-up texts when you reply, which confirms your number is active.',
-    ],
-    actions: [
-      'Do not open the link or enter payment details.',
-      'Check your real delivery account or app manually if you are expecting a parcel.',
-      'Report the message as spam or smishing and block the sender.',
-    ],
-  ),
-  SmsThread(
-    contact: 'SecureBank Alerts',
-    phoneNumber: '+44 7920 445812',
-    preview:
-        'Suspicious transfer detected. Verify your identity immediately to stop account suspension.',
-    kind: SmsKind.fraud,
-    scamType: 'Fake bank verification',
-    scenario: 'Account freeze threat',
-    riskLevel: 'High risk',
-    timeLabel: '18:27',
-    messages: [
-      SmsMessage(
-        text:
-            'SecureBank: We detected a transfer attempt for £846.31. If this was not you, verify now at securebank-check-transfer.net or your account will be frozen.',
-        timestamp: '18:24',
-        incoming: true,
-      ),
-      SmsMessage(
-        text: 'Is this really from my bank?',
-        timestamp: '18:26',
-        incoming: false,
-      ),
-      SmsMessage(
-        text:
-            'Yes. Confirm your date of birth and online banking code now so we can cancel it.',
-        timestamp: '18:27',
-        incoming: true,
-      ),
-    ],
-    flags: [
-      'Banks do not ask for full login codes or personal secrets through text.',
-      'The link domain is unrelated to the real bank brand.',
-      'The attacker escalates from a fake alert into direct credential collection.',
-      'Replying with concern is used to keep the conversation moving.',
-    ],
-    actions: [
-      'Do not share credentials, PINs, or recovery information.',
-      'Open the official banking app or call the number on your card yourself.',
-      'If you clicked or responded, change credentials and contact the real bank immediately.',
-    ],
-  ),
-  SmsThread(
-    contact: 'Part-Time Jobs UK',
-    phoneNumber: '+44 7555 882301',
-    preview:
-        'Earn £300 a day from home with no interview. Training starts tonight if you join now.',
-    kind: SmsKind.scam,
-    scamType: 'Job bait / task scam',
-    scenario: 'Too-good-to-be-true job offer',
-    riskLevel: 'Medium-high risk',
-    timeLabel: '14:42',
-    messages: [
-      SmsMessage(
-        text:
-            'Hello! We found your CV online. Earn £300/day from home rating products. No interview. Reply YES for instant onboarding.',
-        timestamp: '14:39',
-        incoming: true,
-      ),
-      SmsMessage(
-        text: 'What company is this?',
-        timestamp: '14:40',
-        incoming: false,
-      ),
-      SmsMessage(
-        text:
-            'We explain after registration. Limited places. Send your full name and WhatsApp number to secure your slot.',
-        timestamp: '14:42',
-        incoming: true,
-      ),
-    ],
-    flags: [
-      'Vague employer identity is a common warning sign in scam recruiting.',
-      'Unrealistic pay and urgency are designed to override skepticism.',
-      'The attacker avoids specifics and pushes you to move channels quickly.',
-      'These scams often lead to fake task platforms, upfront fees, or identity harvesting.',
-    ],
-    actions: [
-      'Avoid sharing personal details before you verify the employer independently.',
-      'Search the company through trusted sources, not through the number that contacted you.',
-      'Assume secrecy plus easy money is a red flag until proven otherwise.',
-    ],
-  ),
-  SmsThread(
-    contact: 'Friend? New Number',
-    phoneNumber: '+44 7401 225901',
-    preview:
-        'Hey, this is me on a new number. Can you urgently help me buy a gift card?',
-    kind: SmsKind.suspicious,
-    scamType: 'Impersonation / urgency',
-    scenario: 'Friend-in-need text',
-    riskLevel: 'Medium-high risk',
-    timeLabel: '20:11',
-    messages: [
-      SmsMessage(
-        text:
-            'Hey, it’s me. I lost access to my old phone. Save this new number. Are you free right now?',
-        timestamp: '20:08',
-        incoming: true,
-      ),
-      SmsMessage(text: 'Who is this?', timestamp: '20:09', incoming: false),
-      SmsMessage(
-        text:
-            'I’m in a meeting and can’t talk. Need a quick favor. Can you buy a £100 gift card and send me the code?',
-        timestamp: '20:11',
-        incoming: true,
-      ),
-    ],
-    flags: [
-      'The message tries to build urgency before proving identity.',
-      'Refusing to speak on the phone is common when the attacker is impersonating someone.',
-      'Gift card requests are a classic scam payment method because they are fast and irreversible.',
-    ],
-    actions: [
-      'Verify through the real person’s old number or another channel you already trust.',
-      'Do not send money, gift cards, or codes based only on text messages.',
-      'Assume identity needs proof first, especially from a “new number.”',
-    ],
-  ),
-];
