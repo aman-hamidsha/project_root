@@ -14,6 +14,10 @@ class AppIcons {
   static const String wifi = 'assets/icons/wifi.svg';
   static const String trophy = 'assets/icons/trophy.svg';
   static const String fire = 'assets/icons/fire.svg';
+  static const String info = 'assets/icons/information-circle.svg';
+  static const String eye = 'assets/icons/eye.svg';
+  static const String shieldAlert = 'assets/icons/shield-exclamation.svg';
+  static const String sparkles = 'assets/icons/sparkles.svg';
   static const String settings = 'assets/icons/cog-6-tooth.svg';
   static const String signOut = 'assets/icons/arrow-right-on-rectangle.svg';
 }

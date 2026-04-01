@@ -354,6 +354,7 @@ class _DecisionViewCard extends StatelessWidget {
           const SizedBox(height: 18),
           _SectionCard(
             title: 'Selected Network',
+            iconAsset: AppIcons.wifi,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -390,6 +391,7 @@ class _DecisionViewCard extends StatelessWidget {
           const SizedBox(height: 12),
           _SectionCard(
             title: 'Hints To Notice',
+            iconAsset: AppIcons.info,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: network.hints
@@ -478,6 +480,7 @@ class _AttackerViewCard extends StatelessWidget {
           const SizedBox(height: 18),
           _SectionCard(
             title: 'What They Can Learn Or Influence',
+            iconAsset: AppIcons.eye,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: network.exposureExamples
@@ -490,7 +493,14 @@ class _AttackerViewCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _SectionCard(
+            title: 'Live Capture Snapshot',
+            iconAsset: AppIcons.shieldAlert,
+            child: _CapturedDataGrid(items: network.capturedData),
+          ),
+          const SizedBox(height: 12),
+          _SectionCard(
             title: 'How The Trap Works',
+            iconAsset: AppIcons.sparkles,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: network.attackerMoves
@@ -504,6 +514,7 @@ class _AttackerViewCard extends StatelessWidget {
           const SizedBox(height: 12),
           _SectionCard(
             title: 'How To Protect Yourself',
+            iconAsset: AppIcons.info,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: network.saferHabits
@@ -677,10 +688,15 @@ class _PromptCard extends StatelessWidget {
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child});
+  const _SectionCard({
+    required this.title,
+    required this.child,
+    this.iconAsset,
+  });
 
   final String title;
   final Widget child;
+  final String? iconAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -697,13 +713,28 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: isDark ? Colors.white : const Color(0xFF17376C),
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+          Row(
+            children: [
+              if (iconAsset != null) ...[
+                AppSvgIcon(
+                  iconAsset!,
+                  color: const Color(0xFF2A74EE),
+                  size: 18,
+                  semanticLabel: title,
+                ),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF17376C),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           child,
@@ -735,6 +766,55 @@ class _InfoPill extends StatelessWidget {
           fontWeight: FontWeight.w800,
         ),
       ),
+    );
+  }
+}
+
+class _CapturedDataGrid extends StatelessWidget {
+  const _CapturedDataGrid({required this.items});
+
+  final List<WifiCapturedDatum> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: items
+          .map(
+            (item) => SizedBox(
+              width: 220,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: item.tone.background,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.label,
+                      style: TextStyle(
+                        color: item.tone.foreground,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.value,
+                      style: const TextStyle(
+                        color: Color(0xFF17376C),
+                        fontWeight: FontWeight.w700,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }
@@ -831,6 +911,7 @@ class SimWifiNetwork {
     required this.exposureExamples,
     required this.attackerMoves,
     required this.saferHabits,
+    required this.capturedData,
   });
 
   final String id;
@@ -846,6 +927,30 @@ class SimWifiNetwork {
   final List<String> exposureExamples;
   final List<String> attackerMoves;
   final List<String> saferHabits;
+  final List<WifiCapturedDatum> capturedData;
+}
+
+class WifiCapturedDatum {
+  const WifiCapturedDatum({
+    required this.label,
+    required this.value,
+    required this.tone,
+  });
+
+  final String label;
+  final String value;
+  final WifiDatumTone tone;
+}
+
+enum WifiDatumTone {
+  alert(Color(0xFFFFE0E0), Color(0xFFB13232)),
+  watch(Color(0xFFFFF0D8), Color(0xFFC48720)),
+  info(Color(0xFFE6F0FF), Color(0xFF2A74EE));
+
+  const WifiDatumTone(this.background, this.foreground);
+
+  final Color background;
+  final Color foreground;
 }
 
 const List<SimWifiNetwork> wifiNetworks = <SimWifiNetwork>[
@@ -875,6 +980,23 @@ const List<SimWifiNetwork> wifiNetworks = <SimWifiNetwork>[
       'Prefer password-protected venue Wi-Fi over random open hotspots.',
       'Use HTTPS and avoid handling banking or sensitive accounts unless necessary.',
       'Turn off auto-join when you leave.',
+    ],
+    capturedData: [
+      WifiCapturedDatum(
+        label: 'Visible device name',
+        value: 'hamidsha-laptop',
+        tone: WifiDatumTone.info,
+      ),
+      WifiCapturedDatum(
+        label: 'Observed domain',
+        value: 'student-portal.edu',
+        tone: WifiDatumTone.watch,
+      ),
+      WifiCapturedDatum(
+        label: 'Approx. activity',
+        value: 'Routine browsing metadata only, not an obvious phishing trap.',
+        tone: WifiDatumTone.info,
+      ),
     ],
   ),
   SimWifiNetwork(
@@ -908,6 +1030,28 @@ const List<SimWifiNetwork> wifiNetworks = <SimWifiNetwork>[
       'Use mobile data or a trusted hotspot for sensitive accounts.',
       'Never enter credentials into surprise captive portals without verifying them.',
     ],
+    capturedData: [
+      WifiCapturedDatum(
+        label: 'Device fingerprint',
+        value: 'Chrome on Linux • preferred language en-GB • screen 1920x1080',
+        tone: WifiDatumTone.watch,
+      ),
+      WifiCapturedDatum(
+        label: 'Visited domains',
+        value: 'mail.uni.edu, maps.example, banking-login-check.net',
+        tone: WifiDatumTone.alert,
+      ),
+      WifiCapturedDatum(
+        label: 'Captive portal bait',
+        value: 'Fake sign-in page injected asking for email and password',
+        tone: WifiDatumTone.alert,
+      ),
+      WifiCapturedDatum(
+        label: 'Rough location + time',
+        value: 'Terminal cafe • 14:42 • repeat visitor pattern possible',
+        tone: WifiDatumTone.watch,
+      ),
+    ],
   ),
   SimWifiNetwork(
     id: 'coffeehouse_public',
@@ -940,6 +1084,29 @@ const List<SimWifiNetwork> wifiNetworks = <SimWifiNetwork>[
       'Ask staff for the correct Wi-Fi name.',
       'Disable auto-join for public networks.',
     ],
+    capturedData: [
+      WifiCapturedDatum(
+        label: 'DNS lookups',
+        value: 'instagram.com, docs.google.com, login.company-payroll.net',
+        tone: WifiDatumTone.watch,
+      ),
+      WifiCapturedDatum(
+        label: 'Injected prompt',
+        value: 'Browser redirected to fake “accept terms / sign in” page',
+        tone: WifiDatumTone.alert,
+      ),
+      WifiCapturedDatum(
+        label: 'Collected text',
+        value: 'Email address and password typed into captive portal form',
+        tone: WifiDatumTone.alert,
+      ),
+      WifiCapturedDatum(
+        label: 'Session metadata',
+        value:
+            'Device MAC pattern, join time, signal strength, revisit history',
+        tone: WifiDatumTone.watch,
+      ),
+    ],
   ),
   SimWifiNetwork(
     id: 'staff_backoffice',
@@ -965,6 +1132,19 @@ const List<SimWifiNetwork> wifiNetworks = <SimWifiNetwork>[
     saferHabits: [
       'Pick the network the venue actually tells guests to use.',
       'Do not assume “locked” means trustworthy without context.',
+    ],
+    capturedData: [
+      WifiCapturedDatum(
+        label: 'Network mismatch',
+        value: 'Protected network, but not intended for customer devices',
+        tone: WifiDatumTone.watch,
+      ),
+      WifiCapturedDatum(
+        label: 'Potential issue',
+        value:
+            'You may expose your device to an internal network you do not understand',
+        tone: WifiDatumTone.watch,
+      ),
     ],
   ),
   SimWifiNetwork(
@@ -993,6 +1173,19 @@ const List<SimWifiNetwork> wifiNetworks = <SimWifiNetwork>[
       'Verify official public Wi-Fi names from signage or the organization website.',
       'Keep software updated and prefer HTTPS sites.',
       'Use MFA and avoid highly sensitive tasks when possible.',
+    ],
+    capturedData: [
+      WifiCapturedDatum(
+        label: 'Operator visibility',
+        value:
+            'General site metadata and connection timing may still be visible',
+        tone: WifiDatumTone.info,
+      ),
+      WifiCapturedDatum(
+        label: 'Main difference',
+        value: 'Lower chance of fake-portal abuse than a random open hotspot',
+        tone: WifiDatumTone.info,
+      ),
     ],
   ),
 ];

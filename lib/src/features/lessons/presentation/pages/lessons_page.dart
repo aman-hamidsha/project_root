@@ -397,29 +397,19 @@ class _LessonHeroCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
+          Text(
+            'Hover or press the highlighted concept chips for quick definitions.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.78),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children: lesson.keyTerms
-                .map(
-                  (term) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text(
-                      term,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                )
+                .map((term) => _GlossaryChip(term: term, inverse: true))
                 .toList(),
           ),
           const SizedBox(height: 18),
@@ -509,9 +499,6 @@ class _TheorySectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : const Color(0xFF17376C);
-    final bodyColor = isDark
-        ? Colors.white.withValues(alpha: 0.72)
-        : const Color(0xFF4B6694);
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -527,43 +514,44 @@ class _TheorySectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            section.title,
-            style: TextStyle(
-              color: titleColor,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+          Row(
+            children: [
+              AppSvgIcon(
+                _iconForSection(section.title),
+                color: const Color(0xFF2F73EA),
+                size: 20,
+                semanticLabel: section.title,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  section.title,
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
-          ...section.points.map(
-            (point) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.only(top: 7),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2F73EA),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      point,
-                      style: TextStyle(
-                        color: bodyColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        height: 1.45,
-                      ),
-                    ),
-                  ),
-                ],
+          Text(
+            'Hover or tap the underlined terms for quick definitions.',
+            style: TextStyle(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.62)
+                  : const Color(0xFF6584B3),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...section.points.asMap().entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _InsightTile(
+                iconAsset: _iconForPoint(entry.key),
+                text: entry.value,
               ),
             ),
           ),
@@ -893,30 +881,37 @@ class _LessonChecklistCard extends StatelessWidget {
           ...lesson.rememberPoints.map(
             (point) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // TODO(hamidsha): Replace this text marker with a check icon when your icon set is ready.
-                  const Text(
-                    'OK',
-                    style: TextStyle(
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : const Color(0xFFF4F8FF),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const AppSvgIcon(
+                      AppIcons.sparkles,
                       color: Color(0xFF2F73EA),
-                      fontWeight: FontWeight.w900,
+                      size: 18,
+                      semanticLabel: 'Remember',
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      point,
-                      style: TextStyle(
-                        color: bodyColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        height: 1.45,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        point,
+                        style: TextStyle(
+                          color: bodyColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          height: 1.45,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -977,6 +972,262 @@ class LessonMatchPair {
   final String term;
   final String definition;
 }
+
+class _GlossaryChip extends StatelessWidget {
+  const _GlossaryChip({required this.term, this.inverse = false});
+
+  final String term;
+  final bool inverse;
+
+  @override
+  Widget build(BuildContext context) {
+    final definition = _glossary[term];
+    final bgColor = inverse
+        ? Colors.white.withValues(alpha: 0.12)
+        : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12);
+    final fgColor = inverse
+        ? Colors.white
+        : Theme.of(context).colorScheme.primary;
+
+    return Tooltip(
+      message: definition ?? 'Definition coming soon.',
+      waitDuration: const Duration(milliseconds: 250),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: inverse
+                ? Colors.white.withValues(alpha: 0.2)
+                : Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppSvgIcon(
+              AppIcons.info,
+              color: fgColor,
+              size: 14,
+              semanticLabel: term,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              term,
+              style: TextStyle(
+                color: fgColor,
+                fontWeight: FontWeight.w700,
+                decoration: definition == null
+                    ? TextDecoration.none
+                    : TextDecoration.underline,
+                decorationStyle: TextDecorationStyle.dotted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InsightTile extends StatelessWidget {
+  const _InsightTile({required this.iconAsset, required this.text});
+
+  final String iconAsset;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : const Color(0xFFF7FAFF),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2F73EA).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: AppSvgIcon(
+                iconAsset,
+                color: const Color(0xFF2F73EA),
+                size: 18,
+                semanticLabel: 'Insight',
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: _GlossaryRichText(text: text)),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlossaryRichText extends StatelessWidget {
+  const _GlossaryRichText({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark
+        ? Colors.white.withValues(alpha: 0.74)
+        : const Color(0xFF4B6694);
+    final accentColor = isDark
+        ? const Color(0xFF8BC4FF)
+        : const Color(0xFF1E67DF);
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(
+          color: baseColor,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          height: 1.45,
+        ),
+        children: _buildGlossarySpans(
+          context,
+          text,
+          baseColor: baseColor,
+          accentColor: accentColor,
+        ),
+      ),
+    );
+  }
+}
+
+List<InlineSpan> _buildGlossarySpans(
+  BuildContext context,
+  String text, {
+  required Color baseColor,
+  required Color accentColor,
+}) {
+  final spans = <InlineSpan>[];
+  final lower = text.toLowerCase();
+  final glossaryTerms = _glossary.keys.toList()
+    ..sort((a, b) => b.length.compareTo(a.length));
+
+  var cursor = 0;
+  while (cursor < text.length) {
+    String? matchedTerm;
+    var matchedIndex = text.length;
+
+    for (final term in glossaryTerms) {
+      final index = lower.indexOf(term.toLowerCase(), cursor);
+      if (index != -1 && index < matchedIndex) {
+        matchedIndex = index;
+        matchedTerm = term;
+      }
+    }
+
+    if (matchedTerm == null) {
+      spans.add(TextSpan(text: text.substring(cursor)));
+      break;
+    }
+
+    if (matchedIndex > cursor) {
+      spans.add(TextSpan(text: text.substring(cursor, matchedIndex)));
+    }
+
+    final end = matchedIndex + matchedTerm.length;
+    final visible = text.substring(matchedIndex, end);
+    spans.add(
+      WidgetSpan(
+        alignment: PlaceholderAlignment.baseline,
+        baseline: TextBaseline.alphabetic,
+        child: Tooltip(
+          message: _glossary[matchedTerm]!,
+          waitDuration: const Duration(milliseconds: 250),
+          child: Text(
+            visible,
+            style: TextStyle(
+              color: accentColor,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              decoration: TextDecoration.underline,
+              decorationStyle: TextDecorationStyle.dotted,
+              decorationColor: accentColor,
+            ),
+          ),
+        ),
+      ),
+    );
+    cursor = end;
+  }
+
+  return spans;
+}
+
+String _iconForSection(String title) {
+  final lower = title.toLowerCase();
+  if (lower.contains('response') || lower.contains('habit')) {
+    return AppIcons.sparkles;
+  }
+  if (lower.contains('identity') || lower.contains('access')) {
+    return AppIcons.shieldAlert;
+  }
+  if (lower.contains('risk') || lower.contains('danger')) {
+    return AppIcons.eye;
+  }
+  return AppIcons.info;
+}
+
+String _iconForPoint(int index) {
+  const icons = <String>[
+    AppIcons.info,
+    AppIcons.sparkles,
+    AppIcons.shieldAlert,
+    AppIcons.eye,
+  ];
+  return icons[index % icons.length];
+}
+
+const Map<String, String> _glossary = <String, String>{
+  'CIA triad':
+      'Confidentiality, integrity, and availability: three core security goals.',
+  'Authentication': 'Proving who you are with evidence like a password or MFA.',
+  'Authorization': 'Determining what an authenticated user is allowed to do.',
+  'Least privilege': 'Giving only the minimum access needed for a task.',
+  'Backups': 'Copies of important data used for recovery after loss or attack.',
+  'Phishing': 'A scam that imitates a trusted source to steal data or money.',
+  'Smishing': 'Phishing delivered through SMS or text messages.',
+  'Vishing': 'Phishing delivered through voice calls.',
+  'Pretexting': 'Using a made-up story to gain trust and extract information.',
+  'Baiting': 'Using curiosity or reward to lure someone into unsafe action.',
+  'Malware': 'Software designed to harm, spy on, or exploit a device.',
+  'Adware': 'Software that pushes ads and may track user behaviour.',
+  'Ransomware':
+      'Malware that locks files or systems until payment is demanded.',
+  'Password manager':
+      'A tool that stores and generates strong unique passwords.',
+  'HTTPS': 'Encrypted web traffic between your browser and a site.',
+  'Evil twin': 'A fake Wi-Fi hotspot made to look like a legitimate one.',
+  'VPN':
+      'A tool that encrypts traffic between your device and a trusted endpoint.',
+  'Hotspot': 'A network shared from a device, often a phone.',
+  'Deepfakes': 'AI-generated fake media that imitates real people.',
+  'SIM swapping': 'When an attacker moves your number to a SIM they control.',
+  'OSINT': 'Open-source intelligence gathered from public information.',
+  'Voice clone': 'AI-generated speech that mimics a real person’s voice.',
+  'Recovery scams':
+      'Scams that target victims by promising to recover lost money.',
+  'Oversharing': 'Posting more personal information than is safe online.',
+  'Doxxing': 'Publishing someone’s private information without consent.',
+  'Impersonation': 'Pretending to be a trusted person or brand.',
+  'Permissions': 'The access an app or service is allowed to use.',
+};
 
 const List<LessonModule> _lessons = <LessonModule>[
   LessonModule(
