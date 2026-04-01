@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'app_icons.dart';
 
 const _darkBg = Color(0xFF02123D);
 const _darkCard = Color(0xFF0A3C86);
@@ -13,7 +16,38 @@ const _lightCardSoft = Color(0xFFDDEBFF);
 const _lightAccent = Color(0xFF2B6DDB);
 const _lightSurfaceAlt = Color(0xFFE7F0FF);
 
-final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.dark);
+final themeModeProvider = StateNotifierProvider<ThemeModeController, ThemeMode>(
+  (ref) => ThemeModeController(),
+);
+
+class ThemeModeController extends StateNotifier<ThemeMode> {
+  ThemeModeController() : super(ThemeMode.dark) {
+    _load();
+  }
+
+  static const String _storageKey = 'app_theme_mode_v1';
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(_storageKey);
+    state = switch (stored) {
+      'light' => ThemeMode.light,
+      'system' => ThemeMode.system,
+      _ => ThemeMode.dark,
+    };
+  }
+
+  Future<void> setMode(ThemeMode mode) async {
+    state = mode;
+    final prefs = await SharedPreferences.getInstance();
+    final value = switch (mode) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      ThemeMode.system => 'system',
+    };
+    await prefs.setString(_storageKey, value);
+  }
+}
 
 List<BoxShadow> appShadows(bool isDark) => <BoxShadow>[
   BoxShadow(
@@ -212,9 +246,9 @@ class ThemeToggleButton extends ConsumerWidget {
 
     return InkWell(
       onTap: () {
-        ref.read(themeModeProvider.notifier).state = isDark
-            ? ThemeMode.light
-            : ThemeMode.dark;
+        ref
+            .read(themeModeProvider.notifier)
+            .setMode(isDark ? ThemeMode.light : ThemeMode.dark);
       },
       borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
@@ -228,7 +262,6 @@ class ThemeToggleButton extends ConsumerWidget {
           border: Border.all(color: colorScheme.primary, width: 2),
           boxShadow: appShadows(isDark),
         ),
-        // TODO(hamidsha): Replace this text with a theme icon when you add icons back.
         child: Center(
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
@@ -236,16 +269,14 @@ class ThemeToggleButton extends ConsumerWidget {
               opacity: animation,
               child: ScaleTransition(scale: animation, child: child),
             ),
-            child: Text(
-              isDark ? 'Light' : 'Dark',
+            child: AppSvgIcon(
+              isDark ? AppIcons.sun : AppIcons.moon,
               key: ValueKey<bool>(isDark),
-              style: TextStyle(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w800,
-                fontSize: 11,
-                letterSpacing: 0.2,
-              ),
-              textAlign: TextAlign.center,
+              color: colorScheme.primary,
+              size: 20,
+              semanticLabel: isDark
+                  ? 'Switch to light mode'
+                  : 'Switch to dark mode',
             ),
           ),
         ),

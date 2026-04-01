@@ -3,6 +3,7 @@ import 'sms_sim_models.dart';
 const List<SmsThread> smsThreads = [
   SmsThread(
     id: 'campus_safe',
+    scenarioType: SmsScenarioType.campusSafe,
     contact: 'Campus Safety',
     phoneNumber: '+44 7700 900111',
     preview:
@@ -50,6 +51,7 @@ const List<SmsThread> smsThreads = [
   ),
   SmsThread(
     id: 'delivery_fee',
+    scenarioType: SmsScenarioType.smishing,
     contact: 'Royal Mail Parcel',
     phoneNumber: '+44 7412 113580',
     preview:
@@ -109,6 +111,7 @@ const List<SmsThread> smsThreads = [
   ),
   SmsThread(
     id: 'bank_verify',
+    scenarioType: SmsScenarioType.fraudAlert,
     contact: 'SecureBank Alerts',
     phoneNumber: '+44 7920 445812',
     preview:
@@ -168,6 +171,7 @@ const List<SmsThread> smsThreads = [
   ),
   SmsThread(
     id: 'job_bait',
+    scenarioType: SmsScenarioType.jobScam,
     contact: 'Part-Time Jobs UK',
     phoneNumber: '+44 7555 882301',
     preview:
@@ -227,6 +231,7 @@ const List<SmsThread> smsThreads = [
   ),
   SmsThread(
     id: 'friend_impersonation',
+    scenarioType: SmsScenarioType.friendInNeed,
     contact: 'Friend? New Number',
     phoneNumber: '+44 7401 225901',
     preview:

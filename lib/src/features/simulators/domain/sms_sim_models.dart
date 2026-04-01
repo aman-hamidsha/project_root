@@ -13,9 +13,12 @@ enum SmsKind {
   final Color color;
 }
 
+enum SmsScenarioType { campusSafe, smishing, fraudAlert, jobScam, friendInNeed }
+
 class SmsThread {
   const SmsThread({
     required this.id,
+    required this.scenarioType,
     required this.contact,
     required this.phoneNumber,
     required this.preview,
@@ -31,6 +34,7 @@ class SmsThread {
   });
 
   final String id;
+  final SmsScenarioType scenarioType;
   final String contact;
   final String phoneNumber;
   final String preview;
@@ -76,6 +80,9 @@ class SmsResponseEvaluation {
     required this.summary,
     required this.feedback,
     required this.recommendedNextSteps,
+    this.goodChoices = const <String>[],
+    this.mistakes = const <String>[],
+    this.redFlagsFound = const <String>[],
   });
 
   final int score;
@@ -83,4 +90,7 @@ class SmsResponseEvaluation {
   final String summary;
   final List<String> feedback;
   final List<String> recommendedNextSteps;
+  final List<String> goodChoices;
+  final List<String> mistakes;
+  final List<String> redFlagsFound;
 }

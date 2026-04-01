@@ -9,10 +9,14 @@ import '../features/auth/presentation/pages/landing_page.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/signup_page.dart';
 import '../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../features/dashboard/presentation/pages/guide_page.dart';
+import '../features/dashboard/presentation/pages/leaderboard_page.dart';
+import '../features/dashboard/presentation/pages/settings_page.dart';
 import '../features/lessons/presentation/pages/lessons_page.dart';
 import '../features/quizzes/presentation/pages/quiz_page.dart';
 import '../features/simulators/presentation/pages/email_sim_page.dart';
 import '../features/simulators/presentation/pages/sms_sim_page.dart';
+import '../features/simulators/presentation/pages/wifi_sim_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -26,6 +30,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
       GoRoute(path: '/signup', builder: (_, __) => const SignupPage()),
       GoRoute(path: '/dashboard', builder: (_, __) => const DashboardPage()),
+      GoRoute(path: '/guide', builder: (_, __) => const GuidePage()),
+      GoRoute(
+        path: '/leaderboard',
+        builder: (_, __) => const LeaderboardPage(),
+      ),
+      GoRoute(path: '/settings', builder: (_, __) => const SettingsPage()),
       GoRoute(path: '/lessons', builder: (_, __) => const LessonsPage()),
       GoRoute(
         path: '/quiz',
@@ -38,6 +48,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/sim/email', builder: (_, __) => const EmailSimPage()),
       GoRoute(path: '/sim/sms', builder: (_, __) => const SmsSimPage()),
+      GoRoute(path: '/sim/wifi', builder: (_, __) => const WifiSimPage()),
     ],
     redirect: (_, state) {
       final location = state.matchedLocation;
@@ -49,11 +60,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }.contains(location);
       final isProtectedRoute = <String>{
         '/dashboard',
+        '/guide',
+        '/leaderboard',
+        '/settings',
         '/lessons',
         '/quiz',
         '/sim/crypto',
         '/sim/email',
         '/sim/sms',
+        '/sim/wifi',
       }.contains(location);
 
       if (authState.status == AuthStatus.loading) {

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
+import '../../domain/lesson_progress_store.dart';
 
 class LessonsPage extends StatefulWidget {
   const LessonsPage({super.key});
@@ -17,9 +19,16 @@ class _LessonsPageState extends State<LessonsPage> {
   final Map<String, Map<String, String?>> _matchSelections =
       <String, Map<String, String?>>{};
   final Map<String, bool> _matchChecked = <String, bool>{};
+  LessonProgressSnapshot _progress = const LessonProgressSnapshot.empty();
 
   LessonModule get _selectedLesson =>
       _lessons.firstWhere((lesson) => lesson.id == _selectedLessonId);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +86,8 @@ class _LessonsPageState extends State<LessonsPage> {
                   ),
                 ),
                 const SizedBox(height: 18),
+                _LessonProgressHeader(progress: _progress),
+                const SizedBox(height: 18),
                 SizedBox(
                   height: 54,
                   child: ListView.separated(
@@ -87,9 +98,7 @@ class _LessonsPageState extends State<LessonsPage> {
                       return ChoiceChip(
                         label: Text('${lesson.shortLabel}  ${lesson.title}'),
                         selected: isSelected,
-                        onSelected: (_) {
-                          setState(() => _selectedLessonId = lesson.id);
-                        },
+                        onSelected: (_) => _selectLesson(lesson.id),
                         labelStyle: TextStyle(
                           color: isSelected
                               ? Colors.white
@@ -129,6 +138,12 @@ class _LessonsPageState extends State<LessonsPage> {
                       children: [
                         _LessonHeroCard(
                           lesson: _selectedLesson,
+                          progress: _progress.progressForLesson(
+                            _selectedLesson.id,
+                          ),
+                          nextStep: _progress.nextStepForLesson(
+                            _selectedLesson.id,
+                          ),
                           onOpenQuiz: () =>
                               context.go('/quiz?chapter=${_selectedLesson.id}'),
                         ),
@@ -152,9 +167,16 @@ class _LessonsPageState extends State<LessonsPage> {
                             });
                           },
                           onCheck: () {
+                            final isCorrect =
+                                _fillBlankSelections[_selectedLesson.id] ==
+                                _selectedLesson.fillBlank.correctAnswer;
                             setState(() {
                               _fillBlankChecked[_selectedLesson.id] = true;
                             });
+                            _saveFillBlankProgress(
+                              _selectedLesson.id,
+                              mastered: isCorrect,
+                            );
                           },
                         ),
                         const SizedBox(height: 18),
@@ -176,9 +198,19 @@ class _LessonsPageState extends State<LessonsPage> {
                             });
                           },
                           onCheck: () {
+                            final allCorrect = _selectedLesson.matchPairs.every(
+                              (pair) =>
+                                  (_matchSelections[_selectedLesson.id] ??
+                                      <String, String?>{})[pair.term] ==
+                                  pair.definition,
+                            );
                             setState(() {
                               _matchChecked[_selectedLesson.id] = true;
                             });
+                            _saveMatchProgress(
+                              _selectedLesson.id,
+                              mastered: allCorrect,
+                            );
                           },
                         ),
                         const SizedBox(height: 18),
@@ -193,6 +225,57 @@ class _LessonsPageState extends State<LessonsPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _loadProgress() async {
+    final progress = await LessonProgressStore.load();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _progress = progress;
+      _selectedLessonId =
+          _lessons.any((lesson) => lesson.id == progress.lastLessonId)
+          ? progress.lastLessonId
+          : _lessons.first.id;
+    });
+  }
+
+  Future<void> _selectLesson(String lessonId) async {
+    setState(() => _selectedLessonId = lessonId);
+    final progress = await LessonProgressStore.updateSelection(lessonId);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _progress = progress);
+  }
+
+  Future<void> _saveFillBlankProgress(
+    String lessonId, {
+    required bool mastered,
+  }) async {
+    final progress = await LessonProgressStore.setFillBlankMastered(
+      lessonId,
+      mastered,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _progress = progress);
+  }
+
+  Future<void> _saveMatchProgress(
+    String lessonId, {
+    required bool mastered,
+  }) async {
+    final progress = await LessonProgressStore.setMatchMastered(
+      lessonId,
+      mastered,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _progress = progress);
   }
 }
 
@@ -220,14 +303,12 @@ class _TopButton extends StatelessWidget {
                 : const Color(0xFFD5DFF0),
           ),
         ),
-        // TODO(hamidsha): Restore a back icon here later if you want icon-based navigation.
         child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isDark ? Colors.white : const Color(0xFF17376C),
-              fontWeight: FontWeight.w800,
-            ),
+          child: AppSvgIcon(
+            AppIcons.arrowLeft,
+            color: isDark ? Colors.white : const Color(0xFF17376C),
+            size: 20,
+            semanticLabel: label,
           ),
         ),
       ),
@@ -236,9 +317,16 @@ class _TopButton extends StatelessWidget {
 }
 
 class _LessonHeroCard extends StatelessWidget {
-  const _LessonHeroCard({required this.lesson, required this.onOpenQuiz});
+  const _LessonHeroCard({
+    required this.lesson,
+    required this.progress,
+    required this.nextStep,
+    required this.onOpenQuiz,
+  });
 
   final LessonModule lesson;
+  final double progress;
+  final String nextStep;
   final VoidCallback onOpenQuiz;
 
   @override
@@ -289,6 +377,26 @@ class _LessonHeroCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 10,
+              backgroundColor: Colors.white.withValues(alpha: 0.22),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            nextStep,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.86),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 18),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -323,6 +431,67 @@ class _LessonHeroCard extends StatelessWidget {
               foregroundColor: const Color(0xFF17407A),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
               textStyle: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LessonProgressHeader extends StatelessWidget {
+  const _LessonProgressHeader({required this.progress});
+
+  final LessonProgressSnapshot progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF11172A) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFDCE5F3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Lesson Progress',
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF17376C),
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress.overallProgress,
+              minHeight: 10,
+              backgroundColor: isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : const Color(0xFFE3EEFF),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF7FD5A5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${progress.completedLessonCount}/${lessonCatalog.length} lessons completed • Last visited: ${progress.lastLesson.shortLabel} ${progress.lastLesson.title}',
+            style: TextStyle(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.74)
+                  : const Color(0xFF4B6694),
+              fontWeight: FontWeight.w700,
+              height: 1.35,
             ),
           ),
         ],

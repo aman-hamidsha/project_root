@@ -13,9 +13,18 @@ enum EmailKind {
   final Color color;
 }
 
+enum EmailScenarioType {
+  campusSafe,
+  accountPhishing,
+  payrollScam,
+  parcelFee,
+  ceoImpersonation,
+}
+
 class SimEmail {
   const SimEmail({
     required this.id,
+    required this.scenarioType,
     required this.sender,
     required this.fromAddress,
     required this.replyTo,
@@ -33,6 +42,7 @@ class SimEmail {
   });
 
   final String id;
+  final EmailScenarioType scenarioType;
   final String sender;
   final String fromAddress;
   final String replyTo;
@@ -68,6 +78,9 @@ class EmailResponseEvaluation {
     required this.summary,
     required this.feedback,
     required this.recommendedNextSteps,
+    this.goodChoices = const <String>[],
+    this.mistakes = const <String>[],
+    this.redFlagsFound = const <String>[],
   });
 
   final int score;
@@ -75,4 +88,7 @@ class EmailResponseEvaluation {
   final String summary;
   final List<String> feedback;
   final List<String> recommendedNextSteps;
+  final List<String> goodChoices;
+  final List<String> mistakes;
+  final List<String> redFlagsFound;
 }

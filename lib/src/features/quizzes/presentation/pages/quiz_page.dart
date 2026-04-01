@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
 
 class QuizPage extends StatefulWidget {
@@ -1271,14 +1272,12 @@ class _TopButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: colorScheme.primary, width: 3),
         ),
-        // TODO(hamidsha): Restore a back icon here later if you want icon-based navigation.
         child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w800,
-            ),
+          child: AppSvgIcon(
+            AppIcons.arrowLeft,
+            color: colorScheme.primary,
+            size: 20,
+            semanticLabel: label,
           ),
         ),
       ),

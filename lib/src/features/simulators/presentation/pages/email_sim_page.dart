@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
 import '../../domain/email_response_engine.dart';
 import '../../domain/email_sim_data.dart';
@@ -986,12 +987,11 @@ class _TopButton extends StatelessWidget {
           border: Border.all(color: colorScheme.primary, width: 3),
         ),
         child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w800,
-            ),
+          child: AppSvgIcon(
+            AppIcons.arrowLeft,
+            color: colorScheme.primary,
+            size: 20,
+            semanticLabel: label,
           ),
         ),
       ),

@@ -3,6 +3,7 @@ import 'email_sim_models.dart';
 const List<SimEmail> simEmails = [
   SimEmail(
     id: 'campus_it',
+    scenarioType: EmailScenarioType.campusSafe,
     sender: 'Campus IT Support',
     fromAddress: 'support@cs310-university.edu',
     replyTo: 'support@cs310-university.edu',
@@ -47,6 +48,7 @@ const List<SimEmail> simEmails = [
   ),
   SimEmail(
     id: 'microsoft_phish',
+    scenarioType: EmailScenarioType.accountPhishing,
     sender: 'Microsoft Account Team',
     fromAddress: 'security-alert@micr0softverify-login.com',
     replyTo: 'resetforms@micr0softverify-login.com',
@@ -96,6 +98,7 @@ const List<SimEmail> simEmails = [
   ),
   SimEmail(
     id: 'payroll_scam',
+    scenarioType: EmailScenarioType.payrollScam,
     sender: 'HR Payroll Office',
     fromAddress: 'payroll@company-payroll-help.net',
     replyTo: 'forms@company-payroll-help.net',
@@ -144,6 +147,7 @@ const List<SimEmail> simEmails = [
   ),
   SimEmail(
     id: 'parcel_fee',
+    scenarioType: EmailScenarioType.parcelFee,
     sender: 'Delivery Notifications',
     fromAddress: 'tracking@parcel-redelivery-center.com',
     replyTo: 'tracking@parcel-redelivery-center.com',
@@ -193,6 +197,7 @@ const List<SimEmail> simEmails = [
   ),
   SimEmail(
     id: 'ceo_giftcards',
+    scenarioType: EmailScenarioType.ceoImpersonation,
     sender: 'CEO Office',
     fromAddress: 'ceo.office@corp-executive-mail.com',
     replyTo: 'ceo.office@corp-executive-mail.com',
