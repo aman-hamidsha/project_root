@@ -3,6 +3,7 @@ import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
     as _i2;
 
 import 'endpoints/email_idp_endpoint.dart' as _i3;
+import 'endpoints/scenario_endpoint.dart' as _i4;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -11,6 +12,77 @@ class Endpoints extends _i1.EndpointDispatch {
       ..initializeEndpoints(server);
     modules['serverpod_auth_idp'] = _EmailIdpModuleDispatch()
       ..initializeEndpoints(server);
+    final endpoints = <String, _i1.Endpoint>{
+      'scenario': _i4.ScenarioEndpoint()..initialize(server, 'scenario', null),
+    };
+    connectors['scenario'] = _i1.EndpointConnector(
+      name: 'scenario',
+      endpoint: endpoints['scenario']!,
+      methodConnectors: {
+        'analyzeResponse': _i1.MethodConnector(
+          name: 'analyzeResponse',
+          params: {
+            'simulator': _i1.ParameterDescription(
+              name: 'simulator',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'scenarioId': _i1.ParameterDescription(
+              name: 'scenarioId',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'actionsSelected': _i1.ParameterDescription(
+              name: 'actionsSelected',
+              type: _i1.getType<List<String>>(),
+              nullable: false,
+            ),
+            'replyText': _i1.ParameterDescription(
+              name: 'replyText',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'scenarioType': _i1.ParameterDescription(
+              name: 'scenarioType',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call: (_i1.Session session, Map<String, dynamic> params) async =>
+              (endpoints['scenario'] as _i4.ScenarioEndpoint).analyzeResponse(
+                session,
+                simulator: params['simulator'],
+                scenarioId: params['scenarioId'],
+                actionsSelected: params['actionsSelected'],
+                replyText: params['replyText'],
+                scenarioType: params['scenarioType'],
+              ),
+        ),
+        'getUserProgress': _i1.MethodConnector(
+          name: 'getUserProgress',
+          params: {},
+          call: (_i1.Session session, Map<String, dynamic> params) async =>
+              (endpoints['scenario'] as _i4.ScenarioEndpoint)
+                  .getUserProgress(session),
+        ),
+        'listRecentResponses': _i1.MethodConnector(
+          name: 'listRecentResponses',
+          params: {
+            'limit': _i1.ParameterDescription(
+              name: 'limit',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call: (_i1.Session session, Map<String, dynamic> params) async =>
+              (endpoints['scenario'] as _i4.ScenarioEndpoint)
+                  .listRecentResponses(
+                session,
+                limit: params['limit'],
+              ),
+        ),
+      },
+    );
   }
 }
 
@@ -162,12 +234,6 @@ class _EmailIdpModuleDispatch extends _i1.EndpointDispatch {
                 finishPasswordResetToken: params['finishPasswordResetToken'],
                 newPassword: params['newPassword'],
               ),
-        ),
-        'hasAccount': _i1.MethodConnector(
-          name: 'hasAccount',
-          params: {},
-          call: (_i1.Session session, Map<String, dynamic> params) async =>
-              (endpoints['email'] as _i3.EmailIdpEndpoint).hasAccount(session),
         ),
       },
     );

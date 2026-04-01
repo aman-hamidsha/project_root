@@ -1,0 +1,18 @@
+class: ScenarioResponse
+table: scenario_response
+fields:
+  userId: String
+  simulator: String
+  scenarioId: String
+  scenarioType: String?
+  actionsSelected: List<String>
+  replyText: String
+  score: int
+  grade: String
+  summary: String
+  createdAt: DateTime
+indexes:
+  scenario_response_user_created_idx:
+    fields: userId, createdAt
+  scenario_response_simulator_idx:
+    fields: simulator

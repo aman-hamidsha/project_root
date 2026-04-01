@@ -12,10 +12,10 @@ dependencies:
   go_router: ^14.2.0
   shared_preferences: ^2.5.3
   flutter_svg: ^2.2.0
-  serverpod_auth_core_client: ^3.2.0
-  serverpod_auth_idp_flutter: ^3.2.0
-  serverpod_client: ^3.2.0
-  serverpod_flutter: ^3.2.0
+  serverpod_auth_core_client: 3.2.0
+  serverpod_auth_idp_flutter: 3.2.0
+  serverpod_client: 3.2.0
+  serverpod_flutter: 3.2.0
   cs310_client:
     path: ./client
   cupertino_icons: ^1.0.8

@@ -57,7 +57,7 @@ class LeaderboardPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'This is a frontend-ready leaderboard and streak hub. The UI is already structured around a repository contract so we can swap in Serverpod rankings, XP, and streak data later.',
+                  'Ranked by real learning activity from registered users on this device. Lessons, quiz runs, and simulator decisions all add momentum.',
                   style: TextStyle(
                     color: subtitleColor,
                     fontSize: 16,
@@ -155,6 +155,7 @@ class _LeaderboardHeroCard extends StatelessWidget {
                 value: '${social.longestStreakDays} days',
               ),
               _HeroStat(label: 'Global rank', value: '#${social.globalRank}'),
+              _HeroStat(label: 'Today', value: '${social.todayXp} XP'),
               _HeroStat(
                 label: 'Weekly XP',
                 value: '${social.weeklyXp}/${social.weeklyGoalXp}',

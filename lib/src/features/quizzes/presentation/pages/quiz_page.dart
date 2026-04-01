@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
+import '../../../dashboard/domain/dashboard_social_data.dart';
+import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 
 class QuizPage extends StatefulWidget {
   const QuizPage({super.key, this.initialChapterId});
@@ -245,6 +247,19 @@ class _QuizPageState extends State<QuizPage> {
       questions: _sessionQuestions,
       selectedAnswers: _selectedAnswers,
     );
+    final correctAnswers = _sessionQuestions.asMap().entries.where((entry) {
+      final selectedAnswer = _selectedAnswers[entry.key];
+      return selectedAnswer == entry.value.correctIndex;
+    }).length;
+    final accuracy = _sessionQuestions.isEmpty
+        ? 0
+        : correctAnswers / _sessionQuestions.length;
+    final xpEarned = 40 + (accuracy * 35).round();
+    final award = await DashboardSocialActivity.recordCurrentUserActivity(
+      type: UserActivityType.quizCompletion,
+      activityId: 'quiz:${chapter.id}',
+      xp: xpEarned,
+    );
 
     if (!mounted) {
       return;
@@ -255,6 +270,7 @@ class _QuizPageState extends State<QuizPage> {
       _showResults = true;
       _savingResults = false;
     });
+    showActivityCelebration(context, award);
   }
 
   Future<void> _restartChapter() async {

@@ -391,6 +391,7 @@ class _LessonPreviewCard extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(22),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -459,7 +460,7 @@ class _LessonPreviewCard extends StatelessWidget {
                 height: 1.35,
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 18),
             Row(
               children: [
                 Expanded(
@@ -551,7 +552,7 @@ class _MomentumCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Weekly goal: ${social!.weeklyXp}/${social!.weeklyGoalXp} XP • Longest streak ${social!.longestStreakDays} days',
+            '${social!.todayStatusTitle} • ${social!.todayStatusBody}',
             style: TextStyle(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.72)
@@ -559,6 +560,25 @@ class _MomentumCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
               height: 1.35,
             ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _MomentumChip(
+                iconAsset: AppIcons.sparkles,
+                label: '${social!.todayXp} XP today',
+              ),
+              _MomentumChip(
+                iconAsset: AppIcons.trophy,
+                label: 'Level ${social!.currentLevelLabel}',
+              ),
+              _MomentumChip(
+                iconAsset: AppIcons.fire,
+                label: 'Best ${social!.longestStreakDays}d',
+              ),
+            ],
           ),
           const SizedBox(height: 14),
           ClipRRect(
@@ -676,7 +696,7 @@ class _MomentumCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '${entry.xp} XP',
+                              '${entry.xp} XP • ${entry.streakDays}d',
                               style: TextStyle(
                                 color: isDark
                                     ? Colors.white.withValues(alpha: 0.68)
@@ -697,6 +717,49 @@ class _MomentumCard extends StatelessWidget {
             child: OutlinedButton(
               onPressed: onOpenLeaderboard,
               child: const Text('Open Leaderboard'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MomentumChip extends StatelessWidget {
+  const _MomentumChip({
+    required this.iconAsset,
+    required this.label,
+  });
+
+  final String iconAsset;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : const Color(0xFFF4F8FF),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppSvgIcon(
+            iconAsset,
+            color: const Color(0xFF2A74EE),
+            size: 16,
+            semanticLabel: label,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF17376C),
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],

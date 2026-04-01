@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
+import '../../../dashboard/domain/dashboard_social_data.dart';
+import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 import '../../domain/lesson_progress_store.dart';
 
 class LessonsPage extends StatefulWidget {
@@ -244,10 +246,15 @@ class _LessonsPageState extends State<LessonsPage> {
   Future<void> _selectLesson(String lessonId) async {
     setState(() => _selectedLessonId = lessonId);
     final progress = await LessonProgressStore.updateSelection(lessonId);
+    final award = await DashboardSocialActivity.recordCurrentUserActivity(
+      type: UserActivityType.lessonStudy,
+      activityId: 'lesson:$lessonId',
+    );
     if (!mounted) {
       return;
     }
     setState(() => _progress = progress);
+    showActivityCelebration(context, award);
   }
 
   Future<void> _saveFillBlankProgress(
@@ -258,10 +265,17 @@ class _LessonsPageState extends State<LessonsPage> {
       lessonId,
       mastered,
     );
+    final award = mastered
+        ? await DashboardSocialActivity.recordCurrentUserActivity(
+            type: UserActivityType.lessonCheck,
+            activityId: 'lesson-fill:$lessonId',
+          )
+        : null;
     if (!mounted) {
       return;
     }
     setState(() => _progress = progress);
+    showActivityCelebration(context, award);
   }
 
   Future<void> _saveMatchProgress(
@@ -272,10 +286,17 @@ class _LessonsPageState extends State<LessonsPage> {
       lessonId,
       mastered,
     );
+    final award = mastered
+        ? await DashboardSocialActivity.recordCurrentUserActivity(
+            type: UserActivityType.lessonCheck,
+            activityId: 'lesson-match:$lessonId',
+          )
+        : null;
     if (!mounted) {
       return;
     }
     setState(() => _progress = progress);
+    showActivityCelebration(context, award);
   }
 }
 

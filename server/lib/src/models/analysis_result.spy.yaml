@@ -1,0 +1,8 @@
+class: AnalysisResult
+fields:
+  score: int
+  grade: String
+  summary: String
+  goodChoices: List<String>
+  mistakes: List<String>
+  redFlagsFound: List<String>

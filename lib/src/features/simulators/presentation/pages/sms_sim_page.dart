@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
+import '../../../dashboard/domain/dashboard_social_data.dart';
+import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 import '../../domain/sms_response_engine.dart';
 import '../../domain/sms_sim_data.dart';
 import '../../domain/sms_sim_models.dart';
@@ -190,7 +192,7 @@ class _SmsSimPageState extends State<SmsSimPage> {
     );
   }
 
-  void _analyzeThread(SmsThread thread) {
+  Future<void> _analyzeThread(SmsThread thread) async {
     final evaluation = SmsResponseEngine.evaluate(
       thread: thread,
       reply: _controllerFor(thread.id).text,
@@ -200,6 +202,16 @@ class _SmsSimPageState extends State<SmsSimPage> {
     setState(() {
       _evaluations[thread.id] = evaluation;
     });
+
+    final award = await DashboardSocialActivity.recordCurrentUserActivity(
+      type: UserActivityType.simulatorDecision,
+      activityId: 'sms:${thread.id}',
+      xp: 24 + (evaluation.score * 0.32).round(),
+    );
+    if (!mounted) {
+      return;
+    }
+    showActivityCelebration(context, award);
   }
 
   void _resetThread(String threadId) {

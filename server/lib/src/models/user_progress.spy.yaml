@@ -1,0 +1,14 @@
+class: UserProgress
+table: user_progress
+fields:
+  userId: String
+  totalPlayed: int
+  totalScore: int
+  averageScore: double
+  currentStreakDays: int
+  bestStreakDays: int
+  lastPlayedAt: DateTime?
+indexes:
+  user_progress_user_idx:
+    fields: userId
+    unique: true

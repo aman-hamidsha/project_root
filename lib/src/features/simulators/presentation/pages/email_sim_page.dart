@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
+import '../../../dashboard/domain/dashboard_social_data.dart';
+import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 import '../../domain/email_response_engine.dart';
 import '../../domain/email_sim_data.dart';
 import '../../domain/email_sim_models.dart';
@@ -187,7 +189,7 @@ class _EmailSimPageState extends State<EmailSimPage> {
     );
   }
 
-  void _analyzeEmail(SimEmail email) {
+  Future<void> _analyzeEmail(SimEmail email) async {
     final evaluation = EmailResponseEngine.evaluate(
       email: email,
       reply: _controllerFor(email.id).text,
@@ -197,6 +199,16 @@ class _EmailSimPageState extends State<EmailSimPage> {
     setState(() {
       _evaluations[email.id] = evaluation;
     });
+
+    final award = await DashboardSocialActivity.recordCurrentUserActivity(
+      type: UserActivityType.simulatorDecision,
+      activityId: 'email:${email.id}',
+      xp: 24 + (evaluation.score * 0.32).round(),
+    );
+    if (!mounted) {
+      return;
+    }
+    showActivityCelebration(context, award);
   }
 
   void _resetEmail(String emailId) {

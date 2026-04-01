@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
+import '../../../dashboard/domain/dashboard_social_data.dart';
+import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 
 class WifiSimPage extends StatefulWidget {
   const WifiSimPage({super.key});
@@ -148,11 +150,21 @@ class _WifiSimPageState extends State<WifiSimPage> {
     );
   }
 
-  void _connectToSelectedNetwork() {
+  Future<void> _connectToSelectedNetwork() async {
     setState(() {
       _connected = true;
       _showAttackerView = _selectedNetwork.opensUserToSnooping;
     });
+    final xpEarned = _selectedNetwork.opensUserToSnooping ? 28 : 54;
+    final award = await DashboardSocialActivity.recordCurrentUserActivity(
+      type: UserActivityType.simulatorDecision,
+      activityId: 'wifi:${_selectedNetwork.id}',
+      xp: xpEarned,
+    );
+    if (!mounted) {
+      return;
+    }
+    showActivityCelebration(context, award);
   }
 
   void _resetSelection() {

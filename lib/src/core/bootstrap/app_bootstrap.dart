@@ -17,6 +17,7 @@ class AppBootstrap {
   static Future<AppBootstrap> initialize() async {
     final auth = FlutterAuthSessionManager();
     final client = createServerpodClient(BackendConfig.serverUrl)
+      ..authKeyProvider = auth
       ..connectivityMonitor = FlutterConnectivityMonitor()
       ..authSessionManager = auth;
 

@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
+import '../../../dashboard/domain/dashboard_social_data.dart';
+import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 
 class CryptoScamSimPage extends StatefulWidget {
   const CryptoScamSimPage({super.key});
@@ -198,7 +200,7 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
     });
   }
 
-  void _commitCurrentDecision() {
+  Future<void> _commitCurrentDecision() async {
     final decision = _selectedDecision;
     if (decision == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -223,6 +225,11 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
     final savedLoss = !invested && project.outcomeIfInvested < 0
         ? -project.outcomeIfInvested
         : 0;
+    final award = await DashboardSocialActivity.recordCurrentUserActivity(
+      type: UserActivityType.simulatorDecision,
+      activityId: 'crypto:${project.name}',
+      xp: 26 + (evaluation.score * 0.34).round(),
+    );
 
     setState(() {
       _decisions.add(
@@ -245,6 +252,10 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
       _selectedActionIds.clear();
       _reasoningController.clear();
     });
+    if (!mounted) {
+      return;
+    }
+    showActivityCelebration(context, award);
   }
 
   void _restart() {
