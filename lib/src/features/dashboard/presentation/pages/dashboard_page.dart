@@ -15,6 +15,8 @@ class DashboardPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final authState = ref.watch(authControllerProvider);
+    final activeUsername = authState.username;
     final titleColor = isDark ? Colors.white : const Color(0xFF17376C);
     final mutedColor = isDark
         ? Colors.white.withValues(alpha: 0.7)
@@ -70,6 +72,10 @@ class DashboardPage extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 26),
+                      if (activeUsername != null) ...[
+                        _SignedInBanner(username: activeUsername),
+                        const SizedBox(height: 16),
+                      ],
                       Text(
                         'Welcome back.',
                         style: TextStyle(
@@ -191,6 +197,60 @@ class DashboardPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _SignedInBanner extends StatelessWidget {
+  const _SignedInBanner({required this.username});
+
+  final String username;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFDCE5F3),
+        ),
+      ),
+      child: Row(
+        children: [
+          AppSvgIcon(
+            AppIcons.sparkles,
+            color: const Color(0xFF2A74EE),
+            size: 18,
+            semanticLabel: 'Signed in',
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Signed in as ${_displayName(username)}',
+              style: TextStyle(
+                color: isDark ? Colors.white : const Color(0xFF17376C),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _displayName(String value) {
+    return value
+        .split('_')
+        .where((part) => part.isNotEmpty)
+        .map(
+          (part) =>
+              '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+        )
+        .join(' ');
   }
 }
 

@@ -18,6 +18,7 @@ class SmsSimPage extends StatefulWidget {
 
 class _SmsSimPageState extends State<SmsSimPage> {
   int _selectedIndex = 0;
+  bool _showMobileDetail = false;
   final Map<String, TextEditingController> _replyControllers =
       <String, TextEditingController>{};
   final Map<String, Set<String>> _selectedActionIds = <String, Set<String>>{};
@@ -144,42 +145,38 @@ class _SmsSimPageState extends State<SmsSimPage> {
                         );
                       }
 
-                      return Column(
-                        children: [
-                          SizedBox(
-                            height: 290,
-                            child: _ThreadListPanel(
-                              threads: smsThreads,
-                              selectedIndex: _selectedIndex,
-                              onSelect: (index) {
-                                setState(() => _selectedIndex = index);
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Expanded(
-                            child: _ThreadDetailPanel(
-                              thread: _selectedThread,
-                              controller: _controllerFor(_selectedThread.id),
-                              selectedActionIds: _actionsFor(
-                                _selectedThread.id,
-                              ),
-                              evaluation: _evaluations[_selectedThread.id],
-                              onToggleAction: (actionId) {
-                                setState(() {
-                                  final actions = _actionsFor(
-                                    _selectedThread.id,
-                                  );
-                                  if (!actions.add(actionId)) {
-                                    actions.remove(actionId);
-                                  }
-                                });
-                              },
-                              onAnalyze: () => _analyzeThread(_selectedThread),
-                              onReset: () => _resetThread(_selectedThread.id),
-                            ),
-                          ),
-                        ],
+                      if (!_showMobileDetail) {
+                        return _ThreadListPanel(
+                          threads: smsThreads,
+                          selectedIndex: _selectedIndex,
+                          onSelect: (index) {
+                            setState(() {
+                              _selectedIndex = index;
+                              _showMobileDetail = true;
+                            });
+                          },
+                        );
+                      }
+
+                      return _ThreadDetailPanel(
+                        thread: _selectedThread,
+                        controller: _controllerFor(_selectedThread.id),
+                        selectedActionIds: _actionsFor(_selectedThread.id),
+                        evaluation: _evaluations[_selectedThread.id],
+                        onToggleAction: (actionId) {
+                          setState(() {
+                            final actions = _actionsFor(_selectedThread.id);
+                            if (!actions.add(actionId)) {
+                              actions.remove(actionId);
+                            }
+                          });
+                        },
+                        onAnalyze: () => _analyzeThread(_selectedThread),
+                        onReset: () => _resetThread(_selectedThread.id),
+                        showMobileBack: true,
+                        onBackToList: () {
+                          setState(() => _showMobileDetail = false);
+                        },
                       );
                     },
                   ),
@@ -390,6 +387,8 @@ class _ThreadDetailPanel extends StatelessWidget {
     required this.onToggleAction,
     required this.onAnalyze,
     required this.onReset,
+    this.showMobileBack = false,
+    this.onBackToList,
   });
 
   final SmsThread thread;
@@ -399,6 +398,8 @@ class _ThreadDetailPanel extends StatelessWidget {
   final ValueChanged<String> onToggleAction;
   final VoidCallback onAnalyze;
   final VoidCallback onReset;
+  final bool showMobileBack;
+  final VoidCallback? onBackToList;
 
   @override
   Widget build(BuildContext context) {
@@ -413,6 +414,32 @@ class _ThreadDetailPanel extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: ListView(
         children: [
+          if (showMobileBack) ...[
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: onBackToList,
+                  icon: const AppSvgIcon(
+                    AppIcons.arrowLeft,
+                    color: Color(0xFF2A74EE),
+                    size: 18,
+                    semanticLabel: 'Back to threads',
+                  ),
+                  label: const Text('Back To Threads'),
+                ),
+                const Spacer(),
+                Text(
+                  thread.contact,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF17376C),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
           Wrap(
             spacing: 10,
             runSpacing: 10,

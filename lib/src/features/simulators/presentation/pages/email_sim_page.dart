@@ -18,6 +18,7 @@ class EmailSimPage extends StatefulWidget {
 
 class _EmailSimPageState extends State<EmailSimPage> {
   int _selectedIndex = 0;
+  bool _showMobileDetail = false;
   final Map<String, TextEditingController> _replyControllers =
       <String, TextEditingController>{};
   final Map<String, Set<String>> _selectedActionIds = <String, Set<String>>{};
@@ -143,40 +144,38 @@ class _EmailSimPageState extends State<EmailSimPage> {
                         );
                       }
 
-                      return Column(
-                        children: [
-                          SizedBox(
-                            height: 280,
-                            child: _InboxPanel(
-                              emails: simEmails,
-                              selectedIndex: _selectedIndex,
-                              onSelect: (index) {
-                                setState(() => _selectedIndex = index);
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Expanded(
-                            child: _EmailDetailPanel(
-                              email: _selectedEmail,
-                              controller: _controllerFor(_selectedEmail.id),
-                              selectedActionIds: _actionsFor(_selectedEmail.id),
-                              evaluation: _evaluations[_selectedEmail.id],
-                              onToggleAction: (actionId) {
-                                setState(() {
-                                  final actions = _actionsFor(
-                                    _selectedEmail.id,
-                                  );
-                                  if (!actions.add(actionId)) {
-                                    actions.remove(actionId);
-                                  }
-                                });
-                              },
-                              onAnalyze: () => _analyzeEmail(_selectedEmail),
-                              onReset: () => _resetEmail(_selectedEmail.id),
-                            ),
-                          ),
-                        ],
+                      if (!_showMobileDetail) {
+                        return _InboxPanel(
+                          emails: simEmails,
+                          selectedIndex: _selectedIndex,
+                          onSelect: (index) {
+                            setState(() {
+                              _selectedIndex = index;
+                              _showMobileDetail = true;
+                            });
+                          },
+                        );
+                      }
+
+                      return _EmailDetailPanel(
+                        email: _selectedEmail,
+                        controller: _controllerFor(_selectedEmail.id),
+                        selectedActionIds: _actionsFor(_selectedEmail.id),
+                        evaluation: _evaluations[_selectedEmail.id],
+                        onToggleAction: (actionId) {
+                          setState(() {
+                            final actions = _actionsFor(_selectedEmail.id);
+                            if (!actions.add(actionId)) {
+                              actions.remove(actionId);
+                            }
+                          });
+                        },
+                        onAnalyze: () => _analyzeEmail(_selectedEmail),
+                        onReset: () => _resetEmail(_selectedEmail.id),
+                        showMobileBack: true,
+                        onBackToList: () {
+                          setState(() => _showMobileDetail = false);
+                        },
                       );
                     },
                   ),
@@ -386,6 +385,8 @@ class _EmailDetailPanel extends StatelessWidget {
     required this.onToggleAction,
     required this.onAnalyze,
     required this.onReset,
+    this.showMobileBack = false,
+    this.onBackToList,
   });
 
   final SimEmail email;
@@ -395,6 +396,8 @@ class _EmailDetailPanel extends StatelessWidget {
   final ValueChanged<String> onToggleAction;
   final VoidCallback onAnalyze;
   final VoidCallback onReset;
+  final bool showMobileBack;
+  final VoidCallback? onBackToList;
 
   @override
   Widget build(BuildContext context) {
@@ -409,6 +412,36 @@ class _EmailDetailPanel extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: ListView(
         children: [
+          if (showMobileBack) ...[
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: onBackToList,
+                  icon: const AppSvgIcon(
+                    AppIcons.arrowLeft,
+                    color: Color(0xFF2A74EE),
+                    size: 18,
+                    semanticLabel: 'Back to inbox',
+                  ),
+                  label: const Text('Back To Inbox'),
+                ),
+                const Spacer(),
+                Flexible(
+                  child: Text(
+                    email.sender,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF17376C),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
           Wrap(
             spacing: 10,
             runSpacing: 10,

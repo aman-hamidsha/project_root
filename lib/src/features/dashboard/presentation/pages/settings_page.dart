@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
+import '../../../auth/application/auth_controller.dart';
 import '../../../lessons/domain/lesson_progress_store.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -31,6 +32,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ? Colors.white.withValues(alpha: 0.7)
         : const Color(0xFF365D9E);
     final selectedThemeMode = ref.watch(themeModeProvider);
+    final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
       body: DecoratedBox(
@@ -82,6 +84,73 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 Expanded(
                   child: ListView(
                     children: [
+                      _SettingsCard(
+                        title: 'Account',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              authState.username == null
+                                  ? 'No local account is active.'
+                                  : 'Signed in as ${_displayName(authState.username!)}',
+                              style: TextStyle(
+                                color: titleColor,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              authState.username == null
+                                  ? 'Use Log In or Sign Up from the landing screen.'
+                                  : 'This app restores the last saved local session automatically. Use switch account if you want to sign into a different profile.',
+                              style: TextStyle(
+                                color: subtitleColor,
+                                fontWeight: FontWeight.w700,
+                                height: 1.35,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: [
+                                OutlinedButton(
+                                  onPressed: authState.username == null
+                                      ? () => context.go('/login')
+                                      : () async {
+                                          await ref
+                                              .read(authControllerProvider.notifier)
+                                              .switchAccount();
+                                          if (!mounted) {
+                                            return;
+                                          }
+                                          context.go('/login');
+                                        },
+                                  child: Text(
+                                    authState.username == null
+                                        ? 'Open Log In'
+                                        : 'Switch Account',
+                                  ),
+                                ),
+                                if (authState.username != null)
+                                  OutlinedButton(
+                                    onPressed: () async {
+                                      await ref
+                                          .read(authControllerProvider.notifier)
+                                          .signOut();
+                                      if (!mounted) {
+                                        return;
+                                      }
+                                      context.go('/landing');
+                                    },
+                                    child: const Text('Sign Out'),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
                       _SettingsCard(
                         title: 'Appearance',
                         child: Column(
@@ -218,6 +287,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ThemeMode.light => 'Light',
       ThemeMode.dark => 'Dark',
     };
+  }
+
+  String _displayName(String username) {
+    return username
+        .split('_')
+        .where((part) => part.isNotEmpty)
+        .map(
+          (part) =>
+              '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+        )
+        .join(' ');
   }
 }
 

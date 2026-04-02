@@ -35,7 +35,7 @@ class AuthController extends StateNotifier<AuthState> {
 
     final signedInUsername = prefs.getString(_sessionStorageKey);
     state = signedInUsername != null && _accounts.containsKey(signedInUsername)
-        ? const AuthState.authenticated()
+        ? AuthState.authenticated(username: signedInUsername)
         : const AuthState.unauthenticated();
   }
 
@@ -56,12 +56,16 @@ class AuthController extends StateNotifier<AuthState> {
     }
 
     await prefs.setString(_sessionStorageKey, username);
-    state = const AuthState.authenticated();
+    state = AuthState.authenticated(username: username);
   }
 
   Future<void> signOut() async {
     await _initialization;
     await _setSignedInUser(null);
+  }
+
+  Future<void> switchAccount() async {
+    await signOut();
   }
 
   Future<void> login({
