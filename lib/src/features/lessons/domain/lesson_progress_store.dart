@@ -39,6 +39,13 @@ const List<LessonCatalogEntry> lessonCatalog = <LessonCatalogEntry>[
         'Password reuse, malware, fake sites, ransomware, risky installers, and safer defaults.',
   ),
   LessonCatalogEntry(
+    id: 'account_recovery',
+    shortLabel: 'Chapter 4',
+    title: 'Account Recovery And Identity Protection',
+    summary:
+        'Recovery flows, MFA fatigue, session tokens, breach response, and safer identity-proofing habits.',
+  ),
+  LessonCatalogEntry(
     id: 'public_wifi',
     shortLabel: 'Chapter 5',
     title: 'Public Wi-Fi Safety',

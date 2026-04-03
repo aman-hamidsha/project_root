@@ -2305,6 +2305,278 @@ const List<QuizChapter> _chapters = <QuizChapter>[
         ],
         correctIndex: 1,
       ),
+      QuizQuestion(
+        id: 'everyday_21',
+        prompt: 'Why are browser extensions a security concern?',
+        options: [
+          'Some can read page data and collect more information than expected',
+          'They always improve privacy by default',
+          'They cannot affect websites after install',
+          'They work only when the browser is offline',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'everyday_22',
+        prompt:
+            'What is the safest reaction to a fake virus pop-up with a phone number?',
+        options: [
+          'Call immediately because it might be a real warning',
+          'Close the page safely and avoid engaging with the number',
+          'Give remote access so support can inspect the device',
+          'Type your passwords to prove ownership',
+        ],
+        correctIndex: 1,
+      ),
+      QuizQuestion(
+        id: 'everyday_23',
+        prompt: 'Why should backups be tested instead of just created?',
+        options: [
+          'Because a backup that cannot be restored is less useful in a crisis',
+          'Because testing makes malware impossible',
+          'Because cloud storage requires weekly deletion',
+          'Because testing increases download speed',
+        ],
+        correctIndex: 0,
+      ),
+    ],
+  ),
+  QuizChapter(
+    id: 'account_recovery',
+    shortLabel: 'Chapter 4',
+    title: 'Account Recovery And Identity Protection',
+    description:
+        'Protect reset flows, handle MFA prompts safely, and respond properly when account access looks suspicious.',
+    questions: [
+      QuizQuestion(
+        id: 'recovery_01',
+        prompt: 'Why are account recovery options important for security?',
+        options: [
+          'They can become another path attackers use to take over an account',
+          'They only affect app colors',
+          'They disable passwords',
+          'They replace MFA automatically',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_02',
+        prompt: 'What is MFA fatigue?',
+        options: [
+          'A battery issue caused by security apps',
+          'Repeated approval prompts meant to pressure a user into accepting one',
+          'Logging in too often on one device',
+          'Using a password manager for too long',
+        ],
+        correctIndex: 1,
+      ),
+      QuizQuestion(
+        id: 'recovery_03',
+        prompt:
+            'What should you do if you receive an MFA prompt you did not initiate?',
+        options: [
+          'Approve it once in case it is a delayed login',
+          'Deny it and investigate the account immediately',
+          'Ignore it and hope it stops',
+          'Share the prompt with friends',
+        ],
+        correctIndex: 1,
+      ),
+      QuizQuestion(
+        id: 'recovery_04',
+        prompt: 'Why is a recovery email account so important?',
+        options: [
+          'It can help regain access to your primary account',
+          'It removes the need for passwords',
+          'It blocks all phishing attempts',
+          'It prevents software updates',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_05',
+        prompt: 'Which recovery method is weakest if based on public facts?',
+        options: [
+          'Hardware security keys',
+          'Security questions answerable from social media or public data',
+          'Authenticator apps',
+          'Trusted device passcodes',
+        ],
+        correctIndex: 1,
+      ),
+      QuizQuestion(
+        id: 'recovery_06',
+        prompt: 'What is a session token?',
+        options: [
+          'A physical code printed by your bank',
+          'A temporary credential that keeps you signed in after login',
+          'A Wi-Fi password',
+          'A browser theme file',
+        ],
+        correctIndex: 1,
+      ),
+      QuizQuestion(
+        id: 'recovery_07',
+        prompt:
+            'After changing a compromised password, what else is often important?',
+        options: [
+          'Revoking active sessions and checking recovery settings',
+          'Increasing screen brightness',
+          'Deleting all browser tabs',
+          'Turning off MFA',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_08',
+        prompt:
+            'What is the safest response to a surprise password reset email?',
+        options: [
+          'Ignore it completely even if you suspect compromise',
+          'Use the email link immediately without checking',
+          'Check whether the request was real and review account activity',
+          'Forward the reset link to a friend',
+        ],
+        correctIndex: 2,
+      ),
+      QuizQuestion(
+        id: 'recovery_09',
+        prompt: 'Why are carrier account PINs useful?',
+        options: [
+          'They can make SIM-swap attacks harder',
+          'They replace encryption everywhere',
+          'They speed up Wi-Fi logins',
+          'They stop all malware',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_10',
+        prompt:
+            'Which backup factor is usually stronger than SMS when available?',
+        options: [
+          'Authenticator app or hardware key',
+          'Public forum answers',
+          'Shared email inboxes',
+          'A shorter password',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_11',
+        prompt: 'What is the main danger of approving a random login push?',
+        options: [
+          'It may grant an attacker access to your account',
+          'It weakens your Wi-Fi signal',
+          'It clears browser cookies only',
+          'It reduces photo quality',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_12',
+        prompt: 'What should you review after suspected account takeover?',
+        options: [
+          'Recovery phone, email, trusted devices, and sign-in history',
+          'Wallpaper settings only',
+          'Bluetooth name only',
+          'Printer defaults only',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_13',
+        prompt: 'Why are reused recovery answers risky?',
+        options: [
+          'Attackers can reuse what they learn across multiple services',
+          'They automatically expire every day',
+          'They increase encryption strength',
+          'They block session revocation',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_14',
+        prompt:
+            'What is the safest reaction to repeated login failures on an important account?',
+        options: [
+          'Ignore them if the password still works',
+          'Treat them as a sign to review security and monitor the account',
+          'Post your login page online for advice',
+          'Disable all notifications',
+        ],
+        correctIndex: 1,
+      ),
+      QuizQuestion(
+        id: 'recovery_15',
+        prompt:
+            'Why should old phone numbers be removed from account recovery options?',
+        options: [
+          'They may route recovery attempts to numbers you no longer control',
+          'They improve phishing quality',
+          'They create better passwords',
+          'They increase app storage',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_16',
+        prompt:
+            'What is the safest attitude toward unexpected approval prompts?',
+        options: [
+          'Treat them as suspicious unless you initiated the login yourself',
+          'Assume every prompt is delayed but legitimate',
+          'Approve all prompts from familiar apps',
+          'Ignore MFA completely',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_17',
+        prompt:
+            'Which action best reduces damage after a stolen session token?',
+        options: [
+          'Revoking sessions and re-authenticating trusted devices',
+          'Changing wallpaper',
+          'Leaving the browser open longer',
+          'Switching Wi-Fi networks',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_18',
+        prompt:
+            'Why are public birthdays and pet names relevant to account recovery?',
+        options: [
+          'They may help answer weak recovery questions',
+          'They disable authenticator apps',
+          'They break HTTPS',
+          'They turn off file sharing',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_19',
+        prompt: 'Which support message is most suspicious?',
+        options: [
+          'A message asking you to share a one-time code to prove ownership',
+          'A reminder to review your security settings',
+          'A note saying updates are available in the official app',
+          'A warning to verify links before clicking',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'recovery_20',
+        prompt: 'What is the best summary of strong account recovery security?',
+        options: [
+          'Protect the recovery path as carefully as the main login',
+          'Use one recovery email for everyone in the family',
+          'Disable all alerts to avoid stress',
+          'Approve prompts quickly so you do not get locked out',
+        ],
+        correctIndex: 0,
+      ),
     ],
   ),
   QuizChapter(
@@ -2536,6 +2808,63 @@ const List<QuizChapter> _chapters = <QuizChapter>[
           'Enter card details quickly before the network changes',
           'Use any link sent over chat',
           'Turn off MFA first',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'wifi_21',
+        prompt:
+            'Which detail might a hotspot operator still learn even when you browse mostly over HTTPS?',
+        options: [
+          'Visited domains and connection Metadata',
+          'Every encrypted password in plain text',
+          'Offline files stored in airplane mode',
+          'Your device battery percentage only',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'wifi_22',
+        prompt: 'Why are DNS lookups relevant on a hostile Wi-Fi network?',
+        options: [
+          'They can reveal which sites you are trying to reach',
+          'They disable certificate checks',
+          'They make cellular data faster',
+          'They only affect printer setup',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'wifi_23',
+        prompt: 'What is a fake captive portal trying to do?',
+        options: [
+          'Collect credentials or push malicious downloads before internet access',
+          'Increase the legitimacy of the network',
+          'Improve browser privacy automatically',
+          'Back up your files to the cloud',
+        ],
+        correctIndex: 0,
+      ),
+      QuizQuestion(
+        id: 'wifi_24',
+        prompt: 'Which task belongs in a high-risk category on public Wi-Fi?',
+        options: [
+          'Reading a cached article',
+          'Opening a campus map',
+          'Resetting a password for your main email account',
+          'Checking the weather forecast',
+        ],
+        correctIndex: 2,
+      ),
+      QuizQuestion(
+        id: 'wifi_25',
+        prompt:
+            'What should you do after using a public network that felt suspicious?',
+        options: [
+          'Forget the network and monitor important accounts for unusual activity',
+          'Save the network permanently for convenience',
+          'Disable browser warnings because they are noisy',
+          'Reuse the same network for banking later',
         ],
         correctIndex: 0,
       ),
