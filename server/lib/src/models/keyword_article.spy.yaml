@@ -1,0 +1,8 @@
+class: KeywordArticle
+fields:
+  title: String
+  source: String
+  url: String
+  snippet: String
+  publishedLabel: String
+  category: String

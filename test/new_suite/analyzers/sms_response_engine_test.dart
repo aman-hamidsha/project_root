@@ -24,10 +24,6 @@ void main() {
       );
       expect(result.goodChoices, isNotEmpty);
       expect(result.mistakes, isEmpty);
-      expect(
-        result.feedback.join(' '),
-        contains('ML prototype signal'),
-      );
     });
 
     test('heavily penalizes clicking and paying in a smishing scenario', () {

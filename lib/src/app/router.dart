@@ -84,7 +84,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (location == '/loading' || isProtectedRoute) {
-        return '/landing';
+        return '/login';
       }
 
       return null;

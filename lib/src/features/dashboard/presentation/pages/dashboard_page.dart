@@ -269,7 +269,6 @@ class _NarrowLayout extends StatelessWidget {
         _LessonPreviewCard(
           progress: progress,
           onOpenLessons: () => context.go('/lessons'),
-          onOpenGuide: () => context.go('/guide'),
         ),
         const SizedBox(height: 18),
         const _SectionTitle('Momentum'),
@@ -345,7 +344,6 @@ class _WideLayout extends StatelessWidget {
                 child: _LessonPreviewCard(
                   progress: progress,
                   onOpenLessons: () => context.go('/lessons'),
-                  onOpenGuide: () => context.go('/guide'),
                 ),
               ),
             ],
@@ -421,12 +419,10 @@ class _LessonPreviewCard extends StatelessWidget {
   const _LessonPreviewCard({
     required this.progress,
     required this.onOpenLessons,
-    required this.onOpenGuide,
   });
 
   final LessonProgressSnapshot progress;
   final VoidCallback onOpenLessons;
-  final VoidCallback onOpenGuide;
 
   @override
   Widget build(BuildContext context) {
@@ -534,17 +530,6 @@ class _LessonPreviewCard extends StatelessWidget {
                       lessonProgress >= 1 ? 'Review Lesson' : 'Continue Lesson',
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton(
-                  onPressed: onOpenGuide,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.52),
-                    ),
-                  ),
-                  child: const Text('Guide'),
                 ),
               ],
             ),
@@ -786,10 +771,7 @@ class _MomentumCard extends StatelessWidget {
 }
 
 class _MomentumChip extends StatelessWidget {
-  const _MomentumChip({
-    required this.iconAsset,
-    required this.label,
-  });
+  const _MomentumChip({required this.iconAsset, required this.label});
 
   final String iconAsset;
   final String label;

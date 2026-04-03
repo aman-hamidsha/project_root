@@ -131,8 +131,12 @@ class _SmsSimPageState extends State<SmsSimPage> {
                                     final actions = _actionsFor(
                                       _selectedThread.id,
                                     );
-                                    if (!actions.add(actionId)) {
-                                      actions.remove(actionId);
+                                    if (actions.contains(actionId)) {
+                                      actions.clear();
+                                    } else {
+                                      actions
+                                        ..clear()
+                                        ..add(actionId);
                                     }
                                   });
                                 },
@@ -166,8 +170,12 @@ class _SmsSimPageState extends State<SmsSimPage> {
                         onToggleAction: (actionId) {
                           setState(() {
                             final actions = _actionsFor(_selectedThread.id);
-                            if (!actions.add(actionId)) {
-                              actions.remove(actionId);
+                            if (actions.contains(actionId)) {
+                              actions.clear();
+                            } else {
+                              actions
+                                ..clear()
+                                ..add(actionId);
                             }
                           });
                         },
@@ -703,7 +711,7 @@ class _DecisionLabState extends State<_DecisionLab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Choose one or more actions, write a reply if you want, then run the response engine.',
+            'Choose one action, write a reply if you want, then run the response engine.',
             style: TextStyle(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.72)
@@ -722,6 +730,7 @@ class _DecisionLabState extends State<_DecisionLab> {
                     selected: widget.selectedActionIds.contains(option.id),
                     onSelected: (_) => widget.onToggleAction(option.id),
                     tooltip: option.description,
+                    showCheckmark: true,
                   ),
                 )
                 .toList(),

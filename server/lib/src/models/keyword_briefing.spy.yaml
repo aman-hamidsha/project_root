@@ -1,0 +1,7 @@
+class: KeywordBriefing
+fields:
+  keyword: String
+  overview: String
+  vulnerabilities: List<KeywordArticle>
+  news: List<KeywordArticle>
+  fetchedAt: DateTime

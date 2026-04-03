@@ -6,7 +6,3 @@ emailIdp:
   - startPasswordReset:
   - verifyPasswordResetCode:
   - finishPasswordReset:
-scenario:
-  - analyzeResponse:
-  - getUserProgress:
-  - listRecentResponses:

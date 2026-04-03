@@ -18,6 +18,7 @@ dependencies:
   serverpod_flutter: 3.2.0
   cs310_client:
     path: ./client
+  url_launcher: ^6.3.1
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

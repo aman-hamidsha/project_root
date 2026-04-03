@@ -1,4 +1,3 @@
-import 'ml_inference.dart';
 import 'email_sim_models.dart';
 
 class EmailActionScore {
@@ -292,21 +291,8 @@ class EmailResponseAnalyzer {
         'Some wording in your reply still matched risky compliance language: ${redFlagsFound.join(', ')}.',
       );
     }
-    final mlResult = MlNaiveBayesClassifier.classifyEmail(
-      scenario: email.scenarioType.name,
-      actions: actionsSelected,
-      reply: replyText,
-    );
-    feedback.add(
-      'ML prototype signal: the trained classifier predicted "${mlResult.label}" for this response pattern.',
-    );
-
     final score = rawScore.clamp(0, 100);
-    final blendedScore = ((score * 0.7) + (mlResult.score * 0.3)).round().clamp(
-      0,
-      100,
-    );
-    final verdict = switch (blendedScore) {
+    final verdict = switch (score) {
       >= 85 => 'Excellent judgment',
       >= 70 => 'Good response',
       >= 45 => 'At risk',
@@ -333,7 +319,7 @@ class EmailResponseAnalyzer {
     };
 
     return EmailResponseEvaluation(
-      score: blendedScore,
+      score: score,
       verdict: verdict,
       summary: summary,
       feedback: feedback.isEmpty

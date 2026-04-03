@@ -19,7 +19,8 @@ import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
 import 'package:cs310_client/src/protocol/analysis_result.dart' as _i5;
 import 'package:cs310_client/src/protocol/user_progress.dart' as _i6;
 import 'package:cs310_client/src/protocol/scenario_response.dart' as _i7;
-import 'protocol.dart' as _i8;
+import 'package:cs310_client/src/protocol/keyword_briefing.dart' as _i8;
+import 'protocol.dart' as _i9;
 
 /// {@category Endpoint}
 class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
@@ -41,14 +42,15 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   _i3.Future<_i4.AuthSuccess> login({
     required String email,
     required String password,
-  }) => caller.callServerEndpoint<_i4.AuthSuccess>(
-    'emailIdp',
-    'login',
-    {
-      'email': email,
-      'password': password,
-    },
-  );
+  }) =>
+      caller.callServerEndpoint<_i4.AuthSuccess>(
+        'emailIdp',
+        'login',
+        {
+          'email': email,
+          'password': password,
+        },
+      );
 
   /// Starts the registration for a new user account with an email-based login
   /// associated to it.
@@ -82,14 +84,15 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   _i3.Future<String> verifyRegistrationCode({
     required _i2.UuidValue accountRequestId,
     required String verificationCode,
-  }) => caller.callServerEndpoint<String>(
-    'emailIdp',
-    'verifyRegistrationCode',
-    {
-      'accountRequestId': accountRequestId,
-      'verificationCode': verificationCode,
-    },
-  );
+  }) =>
+      caller.callServerEndpoint<String>(
+        'emailIdp',
+        'verifyRegistrationCode',
+        {
+          'accountRequestId': accountRequestId,
+          'verificationCode': verificationCode,
+        },
+      );
 
   /// Completes a new account registration, creating a new auth user with a
   /// profile and attaching the given email account to it.
@@ -109,14 +112,15 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   _i3.Future<_i4.AuthSuccess> finishRegistration({
     required String registrationToken,
     required String password,
-  }) => caller.callServerEndpoint<_i4.AuthSuccess>(
-    'emailIdp',
-    'finishRegistration',
-    {
-      'registrationToken': registrationToken,
-      'password': password,
-    },
-  );
+  }) =>
+      caller.callServerEndpoint<_i4.AuthSuccess>(
+        'emailIdp',
+        'finishRegistration',
+        {
+          'registrationToken': registrationToken,
+          'password': password,
+        },
+      );
 
   /// Requests a password reset for [email].
   ///
@@ -157,14 +161,15 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   _i3.Future<String> verifyPasswordResetCode({
     required _i2.UuidValue passwordResetRequestId,
     required String verificationCode,
-  }) => caller.callServerEndpoint<String>(
-    'emailIdp',
-    'verifyPasswordResetCode',
-    {
-      'passwordResetRequestId': passwordResetRequestId,
-      'verificationCode': verificationCode,
-    },
-  );
+  }) =>
+      caller.callServerEndpoint<String>(
+        'emailIdp',
+        'verifyPasswordResetCode',
+        {
+          'passwordResetRequestId': passwordResetRequestId,
+          'verificationCode': verificationCode,
+        },
+      );
 
   /// Completes a password reset request by setting a new password.
   ///
@@ -184,22 +189,31 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   _i3.Future<void> finishPasswordReset({
     required String finishPasswordResetToken,
     required String newPassword,
-  }) => caller.callServerEndpoint<void>(
-    'emailIdp',
-    'finishPasswordReset',
-    {
-      'finishPasswordResetToken': finishPasswordResetToken,
-      'newPassword': newPassword,
-    },
-  );
+  }) =>
+      caller.callServerEndpoint<void>(
+        'emailIdp',
+        'finishPasswordReset',
+        {
+          'finishPasswordResetToken': finishPasswordResetToken,
+          'newPassword': newPassword,
+        },
+      );
 }
 
-/// {@category Endpoint}
 class EndpointScenario extends _i2.EndpointRef {
   EndpointScenario(_i2.EndpointCaller caller) : super(caller);
 
   @override
   String get name => 'scenario';
+
+  _i3.Future<_i8.KeywordBriefing> getKeywordBriefing({
+    required String keyword,
+  }) =>
+      caller.callServerEndpoint<_i8.KeywordBriefing>(
+        'scenario',
+        'getKeywordBriefing',
+        {'keyword': keyword},
+      );
 
   _i3.Future<_i5.AnalysisResult> analyzeResponse({
     required String simulator,
@@ -207,17 +221,18 @@ class EndpointScenario extends _i2.EndpointRef {
     required List<String> actionsSelected,
     required String replyText,
     String? scenarioType,
-  }) => caller.callServerEndpoint<_i5.AnalysisResult>(
-    'scenario',
-    'analyzeResponse',
-    {
-      'simulator': simulator,
-      'scenarioId': scenarioId,
-      'actionsSelected': actionsSelected,
-      'replyText': replyText,
-      'scenarioType': scenarioType,
-    },
-  );
+  }) =>
+      caller.callServerEndpoint<_i5.AnalysisResult>(
+        'scenario',
+        'analyzeResponse',
+        {
+          'simulator': simulator,
+          'scenarioId': scenarioId,
+          'actionsSelected': actionsSelected,
+          'replyText': replyText,
+          'scenarioType': scenarioType,
+        },
+      );
 
   _i3.Future<_i6.UserProgress?> getUserProgress() =>
       caller.callServerEndpoint<_i6.UserProgress?>(
@@ -226,13 +241,13 @@ class EndpointScenario extends _i2.EndpointRef {
         {},
       );
 
-  _i3.Future<List<_i7.ScenarioResponse>> listRecentResponses({
-    required int limit,
-  }) => caller.callServerEndpoint<List<_i7.ScenarioResponse>>(
-    'scenario',
-    'listRecentResponses',
-    {'limit': limit},
-  );
+  _i3.Future<List<_i7.ScenarioResponse>> listRecentResponses(
+          {int limit = 10}) =>
+      caller.callServerEndpoint<List<_i7.ScenarioResponse>>(
+        'scenario',
+        'listRecentResponses',
+        {'limit': limit},
+      );
 }
 
 class Modules {
@@ -260,41 +275,39 @@ class Client extends _i2.ServerpodClientShared {
       _i2.MethodCallContext,
       Object,
       StackTrace,
-    )?
-    onFailedCall,
+    )? onFailedCall,
     Function(_i2.MethodCallContext)? onSucceededCall,
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
-         host,
-         _i8.Protocol(),
-         securityContext: securityContext,
-         streamingConnectionTimeout: streamingConnectionTimeout,
-         connectionTimeout: connectionTimeout,
-         onFailedCall: onFailedCall,
-         onSucceededCall: onSucceededCall,
-         disconnectStreamsOnLostInternetConnection:
-             disconnectStreamsOnLostInternetConnection,
-       ) {
+          host,
+          _i9.Protocol(),
+          securityContext: securityContext,
+          streamingConnectionTimeout: streamingConnectionTimeout,
+          connectionTimeout: connectionTimeout,
+          onFailedCall: onFailedCall,
+          onSucceededCall: onSucceededCall,
+          disconnectStreamsOnLostInternetConnection:
+              disconnectStreamsOnLostInternetConnection,
+        ) {
     emailIdp = EndpointEmailIdp(this);
     scenario = EndpointScenario(this);
     modules = Modules(this);
   }
 
   late final EndpointEmailIdp emailIdp;
-
   late final EndpointScenario scenario;
 
   late final Modules modules;
 
   @override
   Map<String, _i2.EndpointRef> get endpointRefLookup => {
-    'emailIdp': emailIdp,
-    'scenario': scenario,
-  };
+        'emailIdp': emailIdp,
+        'scenario': scenario,
+      };
 
   @override
   Map<String, _i2.ModuleEndpointCaller> get moduleLookup => {
-    'serverpod_auth_core': modules.serverpod_auth_core,
-    'serverpod_auth_idp': modules.serverpod_auth_idp,
-  };
+        'serverpod_auth_core': modules.serverpod_auth_core,
+        'serverpod_auth_idp': modules.serverpod_auth_idp,
+      };
 }

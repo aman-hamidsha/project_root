@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cs310_client/cs310_client.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
+import '../../../../core/backend/serverpod_client.dart';
+import '../../../../core/config/backend_config.dart';
 import '../../../dashboard/domain/dashboard_social_data.dart';
 import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 import '../../domain/lesson_progress_store.dart';
@@ -15,6 +19,7 @@ class LessonsPage extends StatefulWidget {
 }
 
 class _LessonsPageState extends State<LessonsPage> {
+  final Client _keywordClient = createServerpodClient(BackendConfig.serverUrl);
   String _selectedLessonId = _lessons.first.id;
   final Map<String, String?> _fillBlankSelections = <String, String?>{};
   final Map<String, bool> _fillBlankChecked = <String, bool>{};
@@ -150,6 +155,7 @@ class _LessonsPageState extends State<LessonsPage> {
                           ),
                           onOpenQuiz: () =>
                               context.go('/quiz?chapter=${_selectedLesson.id}'),
+                          onKeywordTap: _showKeywordBriefing,
                         ),
                         const SizedBox(height: 18),
                         ..._selectedLesson.sections.map(
@@ -158,6 +164,7 @@ class _LessonsPageState extends State<LessonsPage> {
                             child: _TheorySectionCard(
                               lesson: _selectedLesson,
                               section: section,
+                              onKeywordTap: _showKeywordBriefing,
                             ),
                           ),
                         ),
@@ -337,6 +344,27 @@ class _LessonsPageState extends State<LessonsPage> {
     setState(() => _progress = progress);
     showActivityCelebration(context, award);
   }
+
+  Future<void> _showKeywordBriefing(String keyword) async {
+    final trimmed = keyword.trim();
+    final definition = _glossary[trimmed];
+    if (!mounted) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return _KeywordBriefingSheet(
+          keyword: trimmed,
+          definition: definition,
+          future: _keywordClient.scenario.getKeywordBriefing(keyword: trimmed),
+        );
+      },
+    );
+  }
 }
 
 class _TopButton extends StatelessWidget {
@@ -382,12 +410,14 @@ class _LessonHeroCard extends StatelessWidget {
     required this.progress,
     required this.nextStep,
     required this.onOpenQuiz,
+    required this.onKeywordTap,
   });
 
   final LessonModule lesson;
   final double progress;
   final String nextStep;
   final VoidCallback onOpenQuiz;
+  final Future<void> Function(String term) onKeywordTap;
 
   @override
   Widget build(BuildContext context) {
@@ -468,7 +498,13 @@ class _LessonHeroCard extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: lesson.keyTerms
-                .map((term) => _GlossaryChip(term: term, inverse: true))
+                .map(
+                  (term) => _GlossaryChip(
+                    term: term,
+                    inverse: true,
+                    onTap: () => onKeywordTap(term),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 18),
@@ -550,10 +586,15 @@ class _LessonProgressHeader extends StatelessWidget {
 }
 
 class _TheorySectionCard extends StatelessWidget {
-  const _TheorySectionCard({required this.lesson, required this.section});
+  const _TheorySectionCard({
+    required this.lesson,
+    required this.section,
+    required this.onKeywordTap,
+  });
 
   final LessonModule lesson;
   final LessonTheorySection section;
+  final Future<void> Function(String term) onKeywordTap;
 
   @override
   Widget build(BuildContext context) {
@@ -621,6 +662,7 @@ class _TheorySectionCard extends StatelessWidget {
                 accentColor: accent,
                 iconAsset: _iconForPoint(entry.key),
                 text: entry.value,
+                onKeywordTap: onKeywordTap,
               ),
             ),
           ),
@@ -1240,10 +1282,11 @@ class LessonMatchPair {
 }
 
 class _GlossaryChip extends StatelessWidget {
-  const _GlossaryChip({required this.term, this.inverse = false});
+  const _GlossaryChip({required this.term, this.inverse = false, this.onTap});
 
   final String term;
   final bool inverse;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1258,39 +1301,48 @@ class _GlossaryChip extends StatelessWidget {
     return Tooltip(
       message: definition ?? 'Definition coming soon.',
       waitDuration: const Duration(milliseconds: 250),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: bgColor,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: inverse
-                ? Colors.white.withValues(alpha: 0.2)
-                : Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppSvgIcon(
-              AppIcons.info,
-              color: fgColor,
-              size: 14,
-              semanticLabel: term,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              term,
-              style: TextStyle(
-                color: fgColor,
-                fontWeight: FontWeight.w700,
-                decoration: definition == null
-                    ? TextDecoration.none
-                    : TextDecoration.underline,
-                decorationStyle: TextDecorationStyle.dotted,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: inverse
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.3),
               ),
             ),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppSvgIcon(
+                  AppIcons.info,
+                  color: fgColor,
+                  size: 14,
+                  semanticLabel: term,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  term,
+                  style: TextStyle(
+                    color: fgColor,
+                    fontWeight: FontWeight.w700,
+                    decoration: definition == null
+                        ? TextDecoration.none
+                        : TextDecoration.underline,
+                    decorationStyle: TextDecorationStyle.dotted,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1302,11 +1354,13 @@ class _InsightTile extends StatelessWidget {
     required this.iconAsset,
     required this.text,
     required this.accentColor,
+    required this.onKeywordTap,
   });
 
   final String iconAsset;
   final String text;
   final Color accentColor;
+  final Future<void> Function(String term) onKeywordTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1339,7 +1393,9 @@ class _InsightTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(child: _GlossaryRichText(text: text)),
+          Expanded(
+            child: _GlossaryRichText(text: text, onKeywordTap: onKeywordTap),
+          ),
         ],
       ),
     );
@@ -1347,9 +1403,10 @@ class _InsightTile extends StatelessWidget {
 }
 
 class _GlossaryRichText extends StatelessWidget {
-  const _GlossaryRichText({required this.text});
+  const _GlossaryRichText({required this.text, required this.onKeywordTap});
 
   final String text;
+  final Future<void> Function(String term) onKeywordTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1373,6 +1430,7 @@ class _GlossaryRichText extends StatelessWidget {
           text,
           baseColor: baseColor,
           accentColor: accentColor,
+          onKeywordTap: onKeywordTap,
         ),
       ),
     );
@@ -1384,6 +1442,7 @@ List<InlineSpan> _buildGlossarySpans(
   String text, {
   required Color baseColor,
   required Color accentColor,
+  required Future<void> Function(String term) onKeywordTap,
 }) {
   final spans = <InlineSpan>[];
   final lower = text.toLowerCase();
@@ -1421,15 +1480,21 @@ List<InlineSpan> _buildGlossarySpans(
         child: Tooltip(
           message: _glossary[matchedTerm]!,
           waitDuration: const Duration(milliseconds: 250),
-          child: Text(
-            visible,
-            style: TextStyle(
-              color: accentColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              decoration: TextDecoration.underline,
-              decorationStyle: TextDecorationStyle.dotted,
-              decorationColor: accentColor,
+          child: GestureDetector(
+            onTap: () => onKeywordTap(matchedTerm!),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Text(
+                visible,
+                style: TextStyle(
+                  color: accentColor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  decoration: TextDecoration.underline,
+                  decorationStyle: TextDecorationStyle.dotted,
+                  decorationColor: accentColor,
+                ),
+              ),
             ),
           ),
         ),
@@ -1439,6 +1504,377 @@ List<InlineSpan> _buildGlossarySpans(
   }
 
   return spans;
+}
+
+class _KeywordBriefingSheet extends StatelessWidget {
+  const _KeywordBriefingSheet({
+    required this.keyword,
+    required this.definition,
+    required this.future,
+  });
+
+  final String keyword;
+  final String? definition;
+  final Future<KeywordBriefing> future;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : const Color(0xFF17376C);
+    final bodyColor = isDark
+        ? Colors.white.withValues(alpha: 0.74)
+        : const Color(0xFF4B6694);
+    return FractionallySizedBox(
+      heightFactor: 0.88,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF09172E) : const Color(0xFFF8FBFF),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+            child: FutureBuilder<KeywordBriefing>(
+              future: future,
+              builder: (context, snapshot) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 46,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.2)
+                              : const Color(0xFFD5E0F0),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            keyword,
+                            style: TextStyle(
+                              color: titleColor,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    ),
+                    if (definition != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : const Color(0xFFDCE5F3),
+                          ),
+                        ),
+                        child: Text(
+                          definition!,
+                          style: TextStyle(
+                            color: bodyColor,
+                            fontWeight: FontWeight.w700,
+                            height: 1.45,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    Expanded(
+                      child: snapshot.connectionState != ConnectionState.done
+                          ? const Center(child: CircularProgressIndicator())
+                          : snapshot.hasError
+                          ? _KeywordFallbackState(
+                              keyword: keyword,
+                              bodyColor: bodyColor,
+                            )
+                          : _KeywordBriefingContent(
+                              briefing: snapshot.data!,
+                              titleColor: titleColor,
+                              bodyColor: bodyColor,
+                              isDark: isDark,
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _KeywordBriefingContent extends StatelessWidget {
+  const _KeywordBriefingContent({
+    required this.briefing,
+    required this.titleColor,
+    required this.bodyColor,
+    required this.isDark,
+  });
+
+  final KeywordBriefing briefing;
+  final Color titleColor;
+  final Color bodyColor;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? const <Color>[Color(0xFF0B3B84), Color(0xFF2A74EE)]
+                  : const <Color>[Color(0xFF2A74EE), Color(0xFF9CC0FF)],
+            ),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Text(
+            briefing.overview,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              height: 1.45,
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        _KeywordSection(
+          title: 'Recent Vulnerabilities',
+          iconAsset: AppIcons.shieldAlert,
+          items: briefing.vulnerabilities,
+          titleColor: titleColor,
+          bodyColor: bodyColor,
+          isDark: isDark,
+        ),
+        const SizedBox(height: 18),
+        _KeywordSection(
+          title: 'Recent Related News',
+          iconAsset: AppIcons.bookOpen,
+          items: briefing.news,
+          titleColor: titleColor,
+          bodyColor: bodyColor,
+          isDark: isDark,
+        ),
+      ],
+    );
+  }
+}
+
+class _KeywordSection extends StatelessWidget {
+  const _KeywordSection({
+    required this.title,
+    required this.iconAsset,
+    required this.items,
+    required this.titleColor,
+    required this.bodyColor,
+    required this.isDark,
+  });
+
+  final String title;
+  final String iconAsset;
+  final List<KeywordArticle> items;
+  final Color titleColor;
+  final Color bodyColor;
+  final bool isDark;
+
+  Future<void> _openArticle(BuildContext context, String url) async {
+    if (url.isEmpty) {
+      return;
+    }
+    final launched = await launchUrlString(
+      url,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open this article right now.')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF11172A) : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFDCE5F3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppSvgIcon(
+                iconAsset,
+                color: const Color(0xFF2F73EA),
+                size: 18,
+                semanticLabel: title,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (items.isEmpty)
+            Text(
+              'No recent items were available for this keyword right now.',
+              style: TextStyle(
+                color: bodyColor,
+                fontWeight: FontWeight.w700,
+                height: 1.4,
+              ),
+            )
+          else
+            ...items.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : const Color(0xFFF6FAFF),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: item.url.isEmpty
+                                  ? null
+                                  : () => _openArticle(context, item.url),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 2,
+                                ),
+                                child: Text(
+                                  item.title,
+                                  style: TextStyle(
+                                    color: item.url.isEmpty
+                                        ? titleColor
+                                        : const Color(0xFF2F73EA),
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.35,
+                                    decoration: item.url.isEmpty
+                                        ? TextDecoration.none
+                                        : TextDecoration.underline,
+                                    decorationStyle: TextDecorationStyle.solid,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            item.publishedLabel,
+                            style: TextStyle(
+                              color: bodyColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${item.source} • ${item.category}',
+                        style: TextStyle(
+                          color: const Color(0xFF2F73EA),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        item.snippet,
+                        style: TextStyle(
+                          color: bodyColor,
+                          fontWeight: FontWeight.w600,
+                          height: 1.45,
+                        ),
+                      ),
+                      if (item.url.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton(
+                            onPressed: () => _openArticle(context, item.url),
+                            child: const Text('Open Article'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KeywordFallbackState extends StatelessWidget {
+  const _KeywordFallbackState({required this.keyword, required this.bodyColor});
+
+  final String keyword;
+  final Color bodyColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        'Live recent updates for "$keyword" could not be loaded right now. The static definition is still available above.',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: bodyColor,
+          fontWeight: FontWeight.w700,
+          height: 1.5,
+        ),
+      ),
+    );
+  }
 }
 
 String _iconForSection(String title) {

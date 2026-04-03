@@ -33,10 +33,8 @@ class AuthController extends StateNotifier<AuthState> {
       }
     }
 
-    final signedInUsername = prefs.getString(_sessionStorageKey);
-    state = signedInUsername != null && _accounts.containsKey(signedInUsername)
-        ? AuthState.authenticated(username: signedInUsername)
-        : const AuthState.unauthenticated();
+    await prefs.remove(_sessionStorageKey);
+    state = const AuthState.unauthenticated();
   }
 
   String _normalizeUsername(String username) => username.trim().toLowerCase();
@@ -111,5 +109,4 @@ class AuthController extends StateNotifier<AuthState> {
       state = const AuthState.unauthenticated();
     }
   }
-
 }
