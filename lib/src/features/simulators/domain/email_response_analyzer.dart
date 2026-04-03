@@ -1,5 +1,37 @@
 import 'email_sim_models.dart';
 
+const List<String> _emailProtectiveReplyKeywords = <String>[
+  'scam',
+  'phishing',
+  'suspicious',
+  'verify',
+  'official',
+  'report',
+  'delete',
+  'call',
+  'bookmark',
+  'not interested',
+  'won\'t',
+  'no',
+];
+
+const List<String> _emailCooperativeReplyKeywords = <String>[
+  'yes',
+  'okay',
+  'ok',
+  'sure',
+  'i will',
+  'i can',
+  'here are',
+  'my details',
+  'my password',
+  'my bank',
+  'sending now',
+  'attached',
+  'clicking',
+  'paid',
+];
+
 class EmailActionScore {
   const EmailActionScore(this.actionId, this.points, this.rationale);
 
@@ -277,9 +309,59 @@ class EmailResponseAnalyzer {
     final safeKeywordCount = rule.safeKeywords
         .where((keyword) => normalizedReply.contains(keyword))
         .length;
+    final hasProtectiveReply = _emailProtectiveReplyKeywords.any(
+      (keyword) => normalizedReply.contains(keyword),
+    );
+    final hasCooperativeReply = _emailCooperativeReplyKeywords.any(
+      (keyword) => normalizedReply.contains(keyword),
+    );
+    final leaksSensitiveData = _containsSensitiveData(normalizedReply);
 
     rawScore += (safeKeywordCount * 5).clamp(0, 15);
     rawScore -= (redFlagsFound.length * 10).clamp(0, 30);
+
+    if (email.kind != EmailKind.safe && normalizedReply.isNotEmpty) {
+      if (hasProtectiveReply) {
+        rawScore -= 6;
+        feedback.add(
+          'Your reply showed skepticism, but responding to a scam email can still confirm that your address is active.',
+        );
+      } else {
+        rawScore -= 18;
+        mistakes.add(
+          'Replying directly to a scam email without a firm refusal or separate verification is risky because it keeps the attacker engaged.',
+        );
+      }
+    }
+
+    if (hasCooperativeReply) {
+      rawScore -= 14;
+      mistakes.add(
+        'Your reply sounded cooperative, which is unsafe because it encourages the scammer and can lead to follow-up pressure.',
+      );
+    }
+
+    if (leaksSensitiveData) {
+      rawScore -= 22;
+      mistakes.add(
+        'Your reply appeared to include personal, account, or contact information. Sending details over a scam email can quickly escalate the damage.',
+      );
+    }
+
+    final selectedSafeAction = actionsSelected.any(
+      (action) =>
+          action == 'open_real_site' ||
+          action == 'verify_official' ||
+          action == 'call_known_contact' ||
+          action == 'report_delete' ||
+          action == 'report_internal',
+    );
+    if (selectedSafeAction && (hasCooperativeReply || leaksSensitiveData)) {
+      rawScore -= 10;
+      mistakes.add(
+        'Your chosen action was safer than your typed reply. In practice, the reply would weaken the better decision.',
+      );
+    }
 
     if (safeKeywordCount > 0) {
       feedback.add(
@@ -332,5 +414,20 @@ class EmailResponseAnalyzer {
       mistakes: mistakes,
       redFlagsFound: redFlagsFound,
     );
+  }
+
+  static bool _containsSensitiveData(String replyText) {
+    if (replyText.isEmpty) {
+      return false;
+    }
+
+    final emailPattern = RegExp(r'\b\S+@\S+\.\S+\b');
+    final phonePattern = RegExp(r'\b(?:\+?\d[\d -]{6,}\d)\b');
+    final codePattern = RegExp(r'\b\d{4,8}\b');
+    final dobPattern = RegExp(r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b');
+    return emailPattern.hasMatch(replyText) ||
+        phonePattern.hasMatch(replyText) ||
+        codePattern.hasMatch(replyText) ||
+        dobPattern.hasMatch(replyText);
   }
 }

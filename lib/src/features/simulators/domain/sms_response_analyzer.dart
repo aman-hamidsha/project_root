@@ -1,5 +1,39 @@
 import 'sms_sim_models.dart';
 
+const List<String> _smsProtectiveReplyKeywords = <String>[
+  'scam',
+  'suspicious',
+  'verify',
+  'official',
+  'call',
+  'bank app',
+  'old number',
+  'report',
+  'block',
+  'ignore',
+  'not interested',
+  'stop',
+  'leave me alone',
+  'won\'t',
+];
+
+const List<String> _smsCooperativeReplyKeywords = <String>[
+  'yes',
+  'okay',
+  'ok',
+  'sure',
+  'i can',
+  'i will',
+  'send',
+  'here are',
+  'my details',
+  'my code',
+  'my number',
+  'my email',
+  'clicking',
+  'paid',
+];
+
 class SmsActionScore {
   const SmsActionScore(this.actionId, this.points, this.rationale);
 
@@ -279,9 +313,55 @@ class SmsResponseAnalyzer {
     final safeKeywordCount = rule.safeKeywords
         .where((keyword) => normalizedReply.contains(keyword))
         .length;
+    final hasProtectiveReply = _smsProtectiveReplyKeywords.any(
+      (keyword) => normalizedReply.contains(keyword),
+    );
+    final hasCooperativeReply = _smsCooperativeReplyKeywords.any(
+      (keyword) => normalizedReply.contains(keyword),
+    );
+    final leaksSensitiveData = _containsSensitiveData(normalizedReply);
 
     rawScore += (safeKeywordCount * 5).clamp(0, 15);
     rawScore -= (redFlagsFound.length * 10).clamp(0, 30);
+
+    if (thread.kind != SmsKind.safe && normalizedReply.isNotEmpty) {
+      if (hasProtectiveReply) {
+        rawScore -= 6;
+        feedback.add(
+          'You sounded skeptical, but replying to a scam text can still confirm that your number is active.',
+        );
+      } else {
+        rawScore -= 18;
+        mistakes.add(
+          'Replying directly to a scam text without a firm refusal or separate verification is risky because it keeps the attacker engaged.',
+        );
+      }
+    }
+
+    if (hasCooperativeReply) {
+      rawScore -= 14;
+      mistakes.add(
+        'Your reply sounded cooperative, which is dangerous in a scam scenario because it encourages the attacker to keep pressing you.',
+      );
+    }
+
+    if (leaksSensitiveData) {
+      rawScore -= 22;
+      mistakes.add(
+        'Your reply appeared to include personal or contact information. Sharing details in scam texts can escalate the damage quickly.',
+      );
+    }
+
+    final selectedSafeAction = actionsSelected.any(
+      (action) =>
+          action == 'verify_official' || action == 'contact_known_channel',
+    );
+    if (selectedSafeAction && (hasCooperativeReply || leaksSensitiveData)) {
+      rawScore -= 10;
+      mistakes.add(
+        'Your chosen action was safer than your typed reply. In practice, the reply would undermine the safer decision.',
+      );
+    }
 
     if (safeKeywordCount > 0) {
       feedback.add(
@@ -333,5 +413,20 @@ class SmsResponseAnalyzer {
       mistakes: mistakes,
       redFlagsFound: redFlagsFound,
     );
+  }
+
+  static bool _containsSensitiveData(String replyText) {
+    if (replyText.isEmpty) {
+      return false;
+    }
+
+    final emailPattern = RegExp(r'\b\S+@\S+\.\S+\b');
+    final phonePattern = RegExp(r'\b(?:\+?\d[\d -]{6,}\d)\b');
+    final codePattern = RegExp(r'\b\d{4,8}\b');
+    final dobPattern = RegExp(r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b');
+    return emailPattern.hasMatch(replyText) ||
+        phonePattern.hasMatch(replyText) ||
+        codePattern.hasMatch(replyText) ||
+        dobPattern.hasMatch(replyText);
   }
 }
