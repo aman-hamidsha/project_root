@@ -22,6 +22,11 @@ class AppIcons {
   static const String signOut = 'assets/icons/arrow-right-on-rectangle.svg';
 }
 
+/**
+ * The AppSvgIcon widget is a reusable component that displays an SVG icon from the assets.
+ * It takes the asset path, color, size, and an optional semantic label as parameters.
+ * It uses the SvgPicture.asset widget from the flutter_svg package to render the SVG icon.
+ */
 class AppSvgIcon extends StatelessWidget {
   const AppSvgIcon(
     this.asset, {

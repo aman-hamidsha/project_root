@@ -16,6 +16,12 @@ const _lightCardSoft = Color(0xFFDDEBFF);
 const _lightAccent = Color(0xFF2B6DDB);
 const _lightSurfaceAlt = Color(0xFFE7F0FF);
 
+/**
+ * This file defines the app's themes (light and dark) and a ThemeToggleButton widget. 
+ * It also includes a ThemeModeController that manages the current theme mode and 
+ * persists it using SharedPreferences.
+ */
+
 final themeModeProvider = StateNotifierProvider<ThemeModeController, ThemeMode>(
   (ref) => ThemeModeController(),
 );
@@ -59,6 +65,7 @@ List<BoxShadow> appShadows(bool isDark) => <BoxShadow>[
   ),
 ];
 
+// dark theme
 final appDarkTheme = ThemeData(
   useMaterial3: true,
   brightness: Brightness.dark,
@@ -147,6 +154,7 @@ final appDarkTheme = ThemeData(
   splashFactory: InkRipple.splashFactory,
 );
 
+//dark theme
 final appLightTheme = ThemeData(
   useMaterial3: true,
   brightness: Brightness.light,

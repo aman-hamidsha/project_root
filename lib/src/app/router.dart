@@ -18,47 +18,103 @@ import '../features/simulators/presentation/pages/email_sim_page.dart';
 import '../features/simulators/presentation/pages/sms_sim_page.dart';
 import '../features/simulators/presentation/pages/wifi_sim_page.dart';
 
+/**
+ * This file defines the appRouterProvider, which is a Riverpod provider that 
+ * creates and configures a GoRouter instance for the application. 
+ * The router defines the routes for the app and includes a redirect function 
+ * to handle navigation based on the user's authentication state.
+ */
+
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authControllerProvider);
+  // Riverpod provider that exposes GoRouter instance
+  final authState = ref.watch(
+    authControllerProvider,
+  ); // reactive auth state (loading/authenticated/unauthenticated)
 
   return GoRouter(
-    initialLocation: '/loading',
+    // create router configuration
+    initialLocation: '/loading', // default route when app starts
     routes: [
-      GoRoute(path: '/loading', builder: (_, __) => const AuthLoadingPage()),
-      GoRoute(path: '/', builder: (_, __) => const LandingPage()),
-      GoRoute(path: '/landing', builder: (_, __) => const LandingPage()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
-      GoRoute(path: '/signup', builder: (_, __) => const SignupPage()),
-      GoRoute(path: '/dashboard', builder: (_, __) => const DashboardPage()),
-      GoRoute(path: '/guide', builder: (_, __) => const GuidePage()),
+      // list of all app routes
       GoRoute(
-        path: '/leaderboard',
-        builder: (_, __) => const LeaderboardPage(),
-      ),
-      GoRoute(path: '/settings', builder: (_, __) => const SettingsPage()),
-      GoRoute(path: '/lessons', builder: (_, __) => const LessonsPage()),
+        path: '/loading',
+        builder: (_, __) => const AuthLoadingPage(),
+      ), // loading screen route
       GoRoute(
-        path: '/quiz',
-        builder: (_, state) =>
-            QuizPage(initialChapterId: state.uri.queryParameters['chapter']),
+        path: '/',
+        builder: (_, __) => const LandingPage(),
+      ), // root route -> landing page
+      GoRoute(
+        path: '/landing',
+        builder: (_, __) => const LandingPage(),
+      ), // explicit landing route
+      GoRoute(
+        path: '/login',
+        builder: (_, __) => const LoginPage(),
+      ), // login page route
+      GoRoute(
+        path: '/signup',
+        builder: (_, __) => const SignupPage(),
+      ), // signup page route
+      GoRoute(
+        path: '/dashboard',
+        builder: (_, __) => const DashboardPage(),
+      ), // main authenticated dashboard
+      GoRoute(
+        path: '/guide',
+        builder: (_, __) => const GuidePage(),
+      ), // guide/tutorial page
+      GoRoute(
+        path: '/leaderboard', // leaderboard route
+        builder: (_, __) => const LeaderboardPage(), // leaderboard UI
       ),
       GoRoute(
-        path: '/sim/crypto',
-        builder: (_, __) => const CryptoScamSimPage(),
+        path: '/settings',
+        builder: (_, __) => const SettingsPage(),
+      ), // settings page
+      GoRoute(
+        path: '/lessons',
+        builder: (_, __) => const LessonsPage(),
+      ), // lessons page
+      GoRoute(
+        path: '/quiz', // quiz route with query parameter
+        builder:
+            (_, state) => // access route state
+            QuizPage(
+              initialChapterId: state.uri.queryParameters['chapter'],
+            ), // pass chapter ID from URL
       ),
-      GoRoute(path: '/sim/email', builder: (_, __) => const EmailSimPage()),
-      GoRoute(path: '/sim/sms', builder: (_, __) => const SmsSimPage()),
-      GoRoute(path: '/sim/wifi', builder: (_, __) => const WifiSimPage()),
+      GoRoute(
+        path: '/sim/crypto', // crypto scam simulation route
+        builder: (_, __) => const CryptoScamSimPage(), // crypto sim UI
+      ),
+      GoRoute(
+        path: '/sim/email',
+        builder: (_, __) => const EmailSimPage(),
+      ), // email phishing simulation
+      GoRoute(
+        path: '/sim/sms',
+        builder: (_, __) => const SmsSimPage(),
+      ), // SMS phishing simulation
+      GoRoute(
+        path: '/sim/wifi',
+        builder: (_, __) => const WifiSimPage(),
+      ), // public WiFi attack simulation
     ],
     redirect: (_, state) {
-      final location = state.matchedLocation;
+      // global redirect logic for route protection
+      final location = state.matchedLocation; // current route path
+
       final isGuestRoute = <String>{
+        // routes accessible without login
         '/',
         '/landing',
         '/login',
         '/signup',
       }.contains(location);
+
       final isProtectedRoute = <String>{
+        // routes requiring authentication
         '/dashboard',
         '/guide',
         '/leaderboard',
@@ -72,22 +128,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }.contains(location);
 
       if (authState.status == AuthStatus.loading) {
-        return location == '/loading' ? null : '/loading';
+        // auth state still being determined
+        return location == '/loading'
+            ? null
+            : '/loading'; // force loading screen unless already there
       }
 
       if (authState.status == AuthStatus.authenticated) {
+        // user is logged in
         if (location == '/loading' || isGuestRoute) {
-          return '/dashboard';
+          // prevent access to guest/loading routes
+          return '/dashboard'; // redirect to dashboard
         }
 
-        return null;
+        return null; // allow navigation
       }
 
       if (location == '/loading' || isProtectedRoute) {
-        return '/login';
+        // unauthenticated user accessing restricted routes
+        return '/login'; // redirect to login
       }
 
-      return null;
+      return null; // allow navigation for guest routes
     },
   );
 });
