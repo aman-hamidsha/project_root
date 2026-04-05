@@ -9,7 +9,23 @@ This folder is the Postgres-backed email authentication backend for the Flutter 
 - Secret template for JWT and SMTP
 - Docker Compose for the database
 
-## Finish setup locally
+## Quick start
+
+From an unzipped project, the cleanest setup flow is:
+
+```bash
+cd server
+./bin/dev_setup.sh
+./bin/dev_start.sh
+```
+
+`dev_setup.sh` will:
+
+- create `config/passwords.yaml` from the example if it is missing
+- start the bundled Postgres container
+- apply the Serverpod migrations
+
+## Manual setup
 
 1. Install the CLI:
 
@@ -23,11 +39,15 @@ dart pub global activate serverpod_cli
 cp config/passwords.yaml.example config/passwords.yaml
 ```
 
-3. Fill in:
+3. Fill in the `development:` section in `config/passwords.yaml`:
 
-- `databasePassword`
+- `database`
+- `serviceSecret`
 - JWT secret values
 - SMTP credentials
+
+All values in `passwords.yaml` must be strings. For example, keep
+`smtpPort` quoted as `'587'`.
 
 If you want email sign-up/login to work, the SMTP values must be real.
 
@@ -51,6 +71,32 @@ dart run bin/main.dart
 The current Flutter code intentionally uses a placeholder factory in
 `lib/src/core/backend/serverpod_client.dart`. Replace that file with an import
 from the generated Serverpod `client` package once generation succeeds.
+
+## Start commands
+
+Server:
+
+```bash
+cd server
+./bin/dev_start.sh
+```
+
+If a previous server process is still holding the ports, use:
+
+```bash
+cd server
+./bin/dev_stop.sh
+./bin/dev_start.sh --restart
+```
+
+Flutter app:
+
+```bash
+cd ..
+flutter pub get
+flutter run \
+  --dart-define=SERVERPOD_SERVER_URL=http://localhost:8080/
+```
 
 ## Flutter run command
 
