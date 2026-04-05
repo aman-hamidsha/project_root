@@ -4,6 +4,21 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
 
+/**
+ * This page is meant to be a quick-start guide for how the app is designed to be used. 
+ * It is not a comprehensive manual, but rather a high-level overview of the intended study
+ *  flow and how the different features fit together.
+ *
+ * The main goal is to help users understand the best way to use the app to learn effectively
+ * , rather than just listing out features or instructions. 
+ * It should set expectations for how the lessons, quizzes, and simulators
+ *  work together as a training loop.
+ *
+ * The content is organized into sections that walk through 
+ * the ideal study path, with tips on how to get the most out of
+ *  each part of the app. The tone is encouraging and focused on learning, 
+ * rather than just technical instructions.
+ */
 class GuidePage extends StatelessWidget {
   const GuidePage({super.key});
 

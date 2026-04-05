@@ -6,6 +6,11 @@ import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
 import '../../../auth/application/auth_controller.dart';
 import '../../../lessons/domain/lesson_progress_store.dart';
+/*
+  This file contains the implementation of the SettingsPage, 
+  which allows users to adjust their app settings, review their local 
+  lesson progress, and manage their account. 
+*/
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -17,6 +22,8 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   late Future<LessonProgressSnapshot> _lessonProgressFuture;
 
+  // load lesson progress once on mountL stored in a Future so FutureBuilder
+  // can show stale data instantly while a reset reloads in the background .
   @override
   void initState() {
     super.initState();
@@ -119,7 +126,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                       ? () => context.go('/login')
                                       : () async {
                                           await ref
-                                              .read(authControllerProvider.notifier)
+                                              .read(
+                                                authControllerProvider.notifier,
+                                              )
                                               .switchAccount();
                                           if (!mounted) {
                                             return;
@@ -289,6 +298,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     };
   }
 
+  // Mirrors the display name logic in DashboardPage and DashboardSocialActivity
+  // kept local here rather than shared to avoid coupling. If the format ever
+  // changes, update all three locations.
   String _displayName(String username) {
     return username
         .split('_')
@@ -300,6 +312,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         .join(' ');
   }
 }
+
+// Generic card wrapper used for every settings section. Accepts any widget
+// as its body so each section can lay out its own content independently.
 
 class _SettingsCard extends StatelessWidget {
   const _SettingsCard({required this.title, required this.child});
@@ -340,6 +355,8 @@ class _SettingsCard extends StatelessWidget {
   }
 }
 
+// A fixed-size back button that uses a border rather than a filled background,
+// keeping it visually lightweight against the page gradient.
 class _TopButton extends StatelessWidget {
   const _TopButton({required this.label, required this.onTap});
 

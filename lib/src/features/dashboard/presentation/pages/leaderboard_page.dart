@@ -6,6 +6,12 @@ import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
 import '../../domain/dashboard_social_data.dart';
 
+/*
+  This file contains the implementation of the LeaderboardPage, 
+  which displays the user's current level, streaks, global rank, and a 
+  leaderboard of top learners. It uses a combination of custom widgets and 
+  Flutter's built-in widgets to create an engaging and visually appealing UI. 
+*/
 class LeaderboardPage extends ConsumerWidget {
   const LeaderboardPage({super.key});
 
