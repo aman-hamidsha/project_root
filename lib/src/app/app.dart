@@ -6,7 +6,7 @@ import 'theme.dart';
 
 /**
  * The App widget is the root of the application. 
- * It uses ConsumerWidget from Riverpod to access the app's state, \
+ * It uses ConsumerWidget from Riverpod to access the app's state, 
  * such as the router and theme mode.
  * It builds a MaterialApp.router, which is configured with the app's router 
  * and themes.

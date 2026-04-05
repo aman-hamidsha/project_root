@@ -1,11 +1,8 @@
+// data model to define shape of authentication state
 enum AuthStatus { loading, authenticated, unauthenticated }
 
 class AuthState {
-  const AuthState({
-    required this.status,
-    this.username,
-    this.errorMessage,
-  });
+  const AuthState({required this.status, this.username, this.errorMessage});
 
   const AuthState.loading() : this(status: AuthStatus.loading);
 

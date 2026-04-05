@@ -8,6 +8,14 @@ import '../../../auth/application/auth_controller.dart';
 import '../../domain/dashboard_social_data.dart';
 import '../../../lessons/domain/lesson_progress_store.dart';
 
+/**
+ * DashboardPage is the main home screen shown to authenticated users.
+ * It watches the auth state to display the current username, loads lesson
+ * progress and social/leaderboard data, and renders either a wide (tablet/desktop)
+ * or narrow (mobile) layout depending on screen width. Also contains buttons
+ * for navigating to the Guide, Settings, and signing out.
+ */
+
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
@@ -200,6 +208,11 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
+/**
+ * _SignedInBanner displays a small card at the top of the dashboard
+ * showing who is currently logged in. It formats the username by splitting
+ * on underscores and capitalising each word, so "john_doe" renders as "John Doe".
+ */
 class _SignedInBanner extends StatelessWidget {
   const _SignedInBanner({required this.username});
 
@@ -254,6 +267,12 @@ class _SignedInBanner extends StatelessWidget {
   }
 }
 
+/**
+ * _NarrowLayout is the single-column layout used on mobile-sized screens.
+ * It renders Lessons, Momentum, and Simulator sections stacked vertically
+ * in a scrollable ListView. Simulator buttons are wrapped in a Wrap widget
+ * so they flow into a grid rather than overflowing off screen.
+ */
 class _NarrowLayout extends StatelessWidget {
   const _NarrowLayout({required this.progress, required this.social});
 
@@ -323,6 +342,12 @@ class _NarrowLayout extends StatelessWidget {
   }
 }
 
+/**
+ * _WideLayout is the two-column layout used on screens 900px wide or more.
+ * The left column takes up more space and shows the Lesson preview card,
+ * while the right column holds the Momentum card and Simulator buttons
+ * stacked vertically in a scrollable list.
+ */
 class _WideLayout extends StatelessWidget {
   const _WideLayout({required this.progress, required this.social});
 
@@ -394,6 +419,11 @@ class _WideLayout extends StatelessWidget {
   }
 }
 
+/**
+ * _SectionTitle renders a small uppercase-weight label used as a heading
+ * above each section of the dashboard (e.g. "Lessons", "Momentum", "Simulators").
+ * Colour adapts to light and dark themes.
+ */
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.text);
   final String text;
@@ -415,6 +445,12 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+/**
+ * _LessonPreviewCard shows the user's current lesson progress on a gradient
+ * card. Displays the last lesson the user was on, an overall progress bar,
+ * completed lesson count, and a button to continue or review the lesson.
+ * Navigates to the lessons page when the button is tapped.
+ */
 class _LessonPreviewCard extends StatelessWidget {
   const _LessonPreviewCard({
     required this.progress,
@@ -544,6 +580,12 @@ class _LessonPreviewCard extends StatelessWidget {
   }
 }
 
+/**
+ * _MomentumCard shows the user's engagement stats, current streak, XP earned
+ * today, level, weekly goal progress bar, a 7-day activity heatmap, and a
+ * preview of the top 3 leaderboard entries. Shows a loading spinner while
+ * social data is still being fetched. Includes a button to open the full leaderboard.
+ */
 class _MomentumCard extends StatelessWidget {
   const _MomentumCard({required this.social, required this.onOpenLeaderboard});
 
@@ -770,6 +812,11 @@ class _MomentumCard extends StatelessWidget {
   }
 }
 
+/**
+ * _MomentumChip is a small pill-shaped badge used inside the MomentumCard
+ * to display a single stat (e.g. XP today, current level, best streak)
+ * with an icon on the left and a label on the right.
+ */
 class _MomentumChip extends StatelessWidget {
   const _MomentumChip({required this.iconAsset, required this.label});
 
@@ -810,6 +857,12 @@ class _MomentumChip extends StatelessWidget {
   }
 }
 
+/**
+ * _DashboardHomeData is a simple data holder that bundles together the two
+ * pieces of async data the dashboard needsthe user's lesson progress
+ * snapshot and their social/leaderboard snapshot so they can be loaded
+ * in a single FutureBuilder and passed down to the layout widgets together.
+ */
 class _DashboardHomeData {
   const _DashboardHomeData({required this.progress, required this.social});
 
@@ -825,6 +878,12 @@ Future<_DashboardHomeData> _loadDashboardHomeData(
   return _DashboardHomeData(progress: progress, social: social);
 }
 
+/**
+ * _SimButton is a tappable card used in both layouts to navigate to one of
+ * the four scam simulator modules (Email, SMS, Crypto, Wi-Fi). Displays an
+ * icon, the module name, and an "Open module" label. Height is fixed at 120px
+ * and the card style adapts to light and dark themes.
+ */
 class _SimButton extends StatelessWidget {
   const _SimButton({
     required this.label,
