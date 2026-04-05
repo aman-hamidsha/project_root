@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// This file defines the data structures and local storage logic for the dashboard's social features,
+// This file defines the dashboard social models plus the local persistence
+// helpers that build streak, XP, activity, and leaderboard state.
 
 /** Represents a single day's activity in the 7-day heatmap strip. */
 class SocialActivityDay {
@@ -235,6 +236,7 @@ class _StoredUserSocialProfile {
   }
 }
 
+/** Coordinates local persistence and derived social dashboard calculations. */
 class DashboardSocialActivity {
   const DashboardSocialActivity._();
 
@@ -269,6 +271,8 @@ class DashboardSocialActivity {
     var xpEarned = 0;
 
     if (existing.lastActiveOn != todayKey) {
+      // A user's streak only advances once per calendar day, even if they
+      // complete multiple activities before midnight.
       unlockedStreakDay = true;
       final nextStreak = _nextStreak(
         previousDateKey: existing.lastActiveOn,
@@ -285,6 +289,8 @@ class DashboardSocialActivity {
     }
 
     if (!alreadyTracked) {
+      // XP is awarded only once per unique activity key so repeat submissions
+      // do not inflate totals or daily counts.
       xpEarned = xp ?? type.defaultXp;
       final nextXpByDate = Map<String, int>.from(updated.xpByDate)
         ..update(
@@ -333,12 +339,15 @@ class DashboardSocialActivity {
     );
   }
 
+  /** Builds the full dashboard view model for the currently signed-in user. */
   static Future<DashboardSocialSnapshot> loadSnapshot() async {
     final prefs = await SharedPreferences.getInstance();
     final registeredUsers = _loadRegisteredUsers(prefs);
     final currentUsername = _loadCurrentUsername(prefs);
     final storedProfiles = _loadProfiles(prefs);
 
+    // Ensure every known account has an in-memory profile, even if they have
+    // never generated any social data yet.
     final profiles = <String, _StoredUserSocialProfile>{};
     for (final username in registeredUsers) {
       profiles[username] =
@@ -350,6 +359,7 @@ class DashboardSocialActivity {
           _StoredUserSocialProfile.empty(currentUsername);
     }
 
+    // Rank primarily by XP, then streak, then username for deterministic ties.
     final sorted = profiles.values.toList()
       ..sort((a, b) {
         final xpCompare = b.totalXp.compareTo(a.totalXp);
@@ -419,6 +429,7 @@ class DashboardSocialActivity {
     );
   }
 
+  /** Reads the active username from the local auth session store. */
   static String? _loadCurrentUsername(SharedPreferences prefs) {
     final username = prefs.getString(_sessionStorageKey);
     if (username == null || username.trim().isEmpty) {
@@ -427,6 +438,7 @@ class DashboardSocialActivity {
     return username.trim().toLowerCase();
   }
 
+  /** Loads all registered usernames from the local auth account store. */
   static Set<String> _loadRegisteredUsers(SharedPreferences prefs) {
     final raw = prefs.getString(_accountsStorageKey);
     if (raw == null || raw.isEmpty) {
@@ -443,6 +455,7 @@ class DashboardSocialActivity {
     }
   }
 
+  /** Loads saved social profiles keyed by normalized username. */
   static Map<String, _StoredUserSocialProfile> _loadProfiles(
     SharedPreferences prefs,
   ) {
@@ -468,6 +481,7 @@ class DashboardSocialActivity {
     }
   }
 
+  /** Persists the complete profile map back to SharedPreferences as JSON. */
   static Future<void> _saveProfiles(
     SharedPreferences prefs,
     Map<String, _StoredUserSocialProfile> profiles,
@@ -476,6 +490,7 @@ class DashboardSocialActivity {
     await prefs.setString(_profilesStorageKey, jsonEncode(json));
   }
 
+  /** Computes the next streak length from the previous active date. */
   static int _nextStreak({
     required String? previousDateKey,
     required String currentDateKey,
@@ -501,6 +516,7 @@ class DashboardSocialActivity {
     return 1;
   }
 
+  /** Sums XP over the trailing [dayCount] days, including today. */
   static int _sumXpForRecentDays(
     _StoredUserSocialProfile profile,
     int dayCount,
@@ -514,6 +530,7 @@ class DashboardSocialActivity {
     return total;
   }
 
+  /** Produces the 7-day activity strip shown on the dashboard heatmap. */
   static List<SocialActivityDay> _recentActivityDays(
     _StoredUserSocialProfile profile,
   ) {
@@ -523,6 +540,8 @@ class DashboardSocialActivity {
       final key = _dateKey(date);
       final xp = profile.xpByDate[key] ?? 0;
       final completed = (profile.activityCountByDate[key] ?? 0) > 0;
+      // Intensity is normalized into a UI-friendly 0.22-1.0 range so even
+      // small positive days remain visible in the heatmap.
       final intensity = xp <= 0 ? 0.0 : (xp / 70).clamp(0.22, 1.0).toDouble();
       return SocialActivityDay(
         label: _weekdayLabel(date.weekday),
@@ -532,6 +551,7 @@ class DashboardSocialActivity {
     });
   }
 
+  /** Drops day-keyed entries older than the local 90-day retention window. */
   static Map<String, int> _trimDateIntMap(Map<String, int> values) {
     final cutoff = DateTime.now().subtract(const Duration(days: 90));
     return Map<String, int>.fromEntries(
@@ -542,6 +562,7 @@ class DashboardSocialActivity {
     );
   }
 
+  /** Removes old deduplication keys so the stored set does not grow forever. */
   static Set<String> _trimAwardedKeys(Set<String> awardedKeys) {
     final cutoff = DateTime.now().subtract(const Duration(days: 90));
     return awardedKeys.where((key) {
@@ -551,6 +572,7 @@ class DashboardSocialActivity {
     }).toSet();
   }
 
+  /** Coerces a decoded JSON map into a string-int map. */
   static Map<String, int> _decodeIntMap(Object? value) {
     if (value is! Map) {
       return <String, int>{};
@@ -560,6 +582,7 @@ class DashboardSocialActivity {
     );
   }
 
+  /** Coerces a decoded JSON list into a string set. */
   static Set<String> _decodeStringSet(Object? value) {
     if (value is! List) {
       return <String>{};
@@ -567,11 +590,13 @@ class DashboardSocialActivity {
     return value.whereType<String>().toSet();
   }
 
+  /** Normalizes a date to `yyyy-mm-dd` for use as a storage key. */
   static String _dateKey(DateTime date) {
     final normalized = DateTime(date.year, date.month, date.day);
     return normalized.toIso8601String().split('T').first;
   }
 
+  /** Converts Dart weekday integers into short dashboard labels. */
   static String _weekdayLabel(int weekday) {
     switch (weekday) {
       case DateTime.monday:
@@ -591,6 +616,7 @@ class DashboardSocialActivity {
     }
   }
 
+  /** Turns a stored snake_case username into a display-friendly name. */
   static String _displayNameFor(String username) {
     return username
         .split('_')
@@ -602,8 +628,10 @@ class DashboardSocialActivity {
         .join(' ');
   }
 
+  /** Maps total XP to a 1-based progression level. */
   static int _levelForXp(int xp) => (xp ~/ 180) + 1;
 
+  /** Builds the human-readable level label shown in the dashboard UI. */
   static String _levelLabel(int xp) {
     final level = _levelForXp(xp);
     final title = switch (level) {
@@ -618,10 +646,12 @@ class DashboardSocialActivity {
   }
 }
 
+/** Abstraction for loading dashboard social data. */
 abstract class DashboardSocialRepository {
   Future<DashboardSocialSnapshot> fetchDashboardSocialSnapshot();
 }
 
+/** Local-only implementation backed by SharedPreferences data. */
 class LocalDashboardSocialRepository implements DashboardSocialRepository {
   const LocalDashboardSocialRepository();
 
@@ -631,6 +661,7 @@ class LocalDashboardSocialRepository implements DashboardSocialRepository {
   }
 }
 
+/** Riverpod provider that exposes the dashboard social repository. */
 final dashboardSocialRepositoryProvider = Provider<DashboardSocialRepository>(
   (ref) => const LocalDashboardSocialRepository(),
 );
