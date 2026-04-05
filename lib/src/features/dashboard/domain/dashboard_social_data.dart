@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// This file defines the data structures and local storage logic for the dashboard's social features,
+
+/** Represents a single day's activity in the 7-day heatmap strip. */
 class SocialActivityDay {
   const SocialActivityDay({
     required this.label,
@@ -15,6 +18,7 @@ class SocialActivityDay {
   final double intensity;
 }
 
+/** A single user's entry in the leaderboard with rank, XP, and streak. */
 class LeaderboardEntry {
   const LeaderboardEntry({
     required this.id,
@@ -33,6 +37,7 @@ class LeaderboardEntry {
   final bool isCurrentUser;
 }
 
+/** Full snapshot of the current user's social stats, streak, and leaderboard data. */
 class DashboardSocialSnapshot {
   const DashboardSocialSnapshot({
     required this.currentStreakDays,
@@ -64,9 +69,11 @@ class DashboardSocialSnapshot {
   final List<SocialActivityDay> activity;
   final List<LeaderboardEntry> leaderboard;
 
+  /** Calculates weekly goal progress as a 0–1 value for the progress bar. */
   double get weeklyGoalProgress =>
       weeklyGoalXp == 0 ? 0 : (weeklyXp / weeklyGoalXp).clamp(0, 1);
 
+  /** Finds and returns the current user's own leaderboard entry, or null if not found. */
   LeaderboardEntry? get currentUserEntry {
     for (final entry in leaderboard) {
       if (entry.isCurrentUser) {
@@ -77,6 +84,7 @@ class DashboardSocialSnapshot {
   }
 }
 
+/** The four activity types a user can complete to earn XP. */
 enum UserActivityType {
   lessonStudy,
   lessonCheck,
@@ -85,6 +93,7 @@ enum UserActivityType {
 }
 
 extension UserActivityTypeMeta on UserActivityType {
+  /** Returns the default XP reward for each activity type. */
   int get defaultXp {
     switch (this) {
       case UserActivityType.lessonStudy:
@@ -98,6 +107,7 @@ extension UserActivityTypeMeta on UserActivityType {
     }
   }
 
+  /** Returns the human-readable name for each activity type. */
   String get label {
     switch (this) {
       case UserActivityType.lessonStudy:
@@ -112,6 +122,7 @@ extension UserActivityTypeMeta on UserActivityType {
   }
 }
 
+/** Returned after recording an activity: summarises XP earned, streak status, and level-up info. */
 class ActivityAward {
   const ActivityAward({
     required this.tracked,
@@ -138,6 +149,7 @@ class ActivityAward {
   bool get shouldCelebrate => unlockedStreakDay || leveledUp;
 }
 
+/** Internal model for a user's social profile as stored on disk. */
 class _StoredUserSocialProfile {
   const _StoredUserSocialProfile({
     required this.username,
@@ -168,6 +180,7 @@ class _StoredUserSocialProfile {
   final Map<String, int> activityCountByDate;
   final Set<String> awardedEventKeys;
 
+  /** Returns a new profile with only the specified fields changed, leaving the rest untouched. */
   _StoredUserSocialProfile copyWith({
     int? totalXp,
     int? currentStreakDays,
@@ -189,6 +202,7 @@ class _StoredUserSocialProfile {
     );
   }
 
+  /** Serialises the profile to a JSON-compatible map for saving to SharedPreferences. */
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'username': username,
@@ -202,6 +216,7 @@ class _StoredUserSocialProfile {
     };
   }
 
+  /** Deserialises a profile from a JSON map loaded from SharedPreferences. */
   factory _StoredUserSocialProfile.fromJson(Map<String, dynamic> json) {
     return _StoredUserSocialProfile(
       username: (json['username'] as String?) ?? 'user',
@@ -228,6 +243,7 @@ class DashboardSocialActivity {
   static const String _accountsStorageKey = 'basic_auth_accounts_v1';
   static const String _sessionStorageKey = 'basic_auth_session_v1';
 
+  /** Records an activity for the current user, awards XP, updates streak, and saves to disk. Returns null if no user is logged in. */
   static Future<ActivityAward?> recordCurrentUserActivity({
     required UserActivityType type,
     required String activityId,
@@ -240,7 +256,8 @@ class DashboardSocialActivity {
     }
 
     final profiles = _loadProfiles(prefs);
-    final existing = profiles[username] ?? _StoredUserSocialProfile.empty(username);
+    final existing =
+        profiles[username] ?? _StoredUserSocialProfile.empty(username);
     final now = DateTime.now();
     final todayKey = _dateKey(now);
     final eventKey = '$todayKey|${type.name}|$activityId';
@@ -270,9 +287,14 @@ class DashboardSocialActivity {
     if (!alreadyTracked) {
       xpEarned = xp ?? type.defaultXp;
       final nextXpByDate = Map<String, int>.from(updated.xpByDate)
-        ..update(todayKey, (value) => value + xpEarned, ifAbsent: () => xpEarned);
-      final nextActivityCount = Map<String, int>.from(updated.activityCountByDate)
-        ..update(todayKey, (value) => value + 1, ifAbsent: () => 1);
+        ..update(
+          todayKey,
+          (value) => value + xpEarned,
+          ifAbsent: () => xpEarned,
+        );
+      final nextActivityCount = Map<String, int>.from(
+        updated.activityCountByDate,
+      )..update(todayKey, (value) => value + 1, ifAbsent: () => 1);
       final nextAwardedKeys = Set<String>.from(updated.awardedEventKeys)
         ..add(eventKey);
 
@@ -324,14 +346,17 @@ class DashboardSocialActivity {
     }
     if (currentUsername != null && currentUsername.isNotEmpty) {
       profiles[currentUsername] =
-          profiles[currentUsername] ?? _StoredUserSocialProfile.empty(currentUsername);
+          profiles[currentUsername] ??
+          _StoredUserSocialProfile.empty(currentUsername);
     }
 
     final sorted = profiles.values.toList()
       ..sort((a, b) {
         final xpCompare = b.totalXp.compareTo(a.totalXp);
         if (xpCompare != 0) return xpCompare;
-        final streakCompare = b.currentStreakDays.compareTo(a.currentStreakDays);
+        final streakCompare = b.currentStreakDays.compareTo(
+          a.currentStreakDays,
+        );
         if (streakCompare != 0) return streakCompare;
         return a.username.compareTo(b.username);
       });
@@ -354,7 +379,8 @@ class DashboardSocialActivity {
 
     final currentProfile = currentUsername == null
         ? const _StoredUserSocialProfile.empty('guest')
-        : profiles[currentUsername] ?? _StoredUserSocialProfile.empty(currentUsername);
+        : profiles[currentUsername] ??
+              _StoredUserSocialProfile.empty(currentUsername);
     final weeklyXp = _sumXpForRecentDays(currentProfile, 7);
     final todayKey = _dateKey(DateTime.now());
     final todayXp = currentProfile.xpByDate[todayKey] ?? 0;
@@ -365,17 +391,19 @@ class DashboardSocialActivity {
     return DashboardSocialSnapshot(
       currentStreakDays: currentProfile.currentStreakDays,
       longestStreakDays: currentProfile.longestStreakDays,
-      globalRank: leaderboard.firstWhere(
-        (entry) => entry.isCurrentUser,
-        orElse: () => const LeaderboardEntry(
-          id: 'guest',
-          displayName: 'Guest',
-          rank: 0,
-          xp: 0,
-          streakDays: 0,
-          isCurrentUser: false,
-        ),
-      ).rank,
+      globalRank: leaderboard
+          .firstWhere(
+            (entry) => entry.isCurrentUser,
+            orElse: () => const LeaderboardEntry(
+              id: 'guest',
+              displayName: 'Guest',
+              rank: 0,
+              xp: 0,
+              streakDays: 0,
+              isCurrentUser: false,
+            ),
+          )
+          .rank,
       weeklyXp: weeklyXp,
       weeklyGoalXp: 420,
       todayXp: todayXp,
