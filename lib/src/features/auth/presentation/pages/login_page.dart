@@ -6,6 +6,12 @@ import '../../application/auth_controller.dart';
 import '../../domain/auth_state.dart';
 import '../widgets/auth_wireframe_shell.dart';
 
+/*
+ * this file contains the login screen for the local auth flow.
+ * it collects username and password input, calls the auth controller, and
+ * surfaces any login errors both inline and through a snackbar.
+ */
+
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -74,6 +80,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
+    // validation is kept lightweight here because the controller handles the
+    // actual credential check and this page just guards obvious empty input.
     if (username.isEmpty || password.isEmpty) {
       _showError('Enter both username and password.');
       return;
@@ -94,6 +102,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _showError(Object error) {
+    // the same message is pushed into auth state and shown as a snackbar so it
+    // remains visible even after the transient toast disappears.
     final message = error.toString();
     ref.read(authControllerProvider.notifier).setError(message);
     if (!mounted) return;

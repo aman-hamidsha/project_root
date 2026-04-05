@@ -1,10 +1,13 @@
 import 'email_sim_models.dart';
 
-/* 
- * This file contains the simulated email scenarios used in the training module.
- * Each SimEmail instance represents a different phishing or scam scenario with
- * associated metadata, flags, and decision options for user interaction.
+/*
+ * this file contains the canned email scenarios used by the simulator.
+ * each SimEmail entry includes the visible message text plus the teaching
+ * metadata the ui and analyzer need, such as flags, recommended actions,
+ * and the decision options a learner can choose from.
  */
+
+// ordered scenario list shown in the simulator inbox.
 const List<SimEmail> simEmails = [
   SimEmail(
     id: 'campus_it',

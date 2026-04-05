@@ -1,5 +1,13 @@
 import 'sms_sim_models.dart';
 
+/*
+ * this file contains the scoring and analysis logic for the sms simulator.
+ * it defines the keyword lists, per-scenario score rules, and the analyzer
+ * that combines selected actions plus typed reply text into a final coaching
+ * result with a score, summary, feedback, and next steps.
+ */
+
+// cautious reply wording that usually signals healthier skepticism.
 const List<String> _smsProtectiveReplyKeywords = <String>[
   'scam',
   'suspicious',
@@ -17,6 +25,7 @@ const List<String> _smsProtectiveReplyKeywords = <String>[
   'won\'t',
 ];
 
+// cooperative wording that suggests the learner is complying with the scam.
 const List<String> _smsCooperativeReplyKeywords = <String>[
   'yes',
   'okay',
@@ -34,6 +43,7 @@ const List<String> _smsCooperativeReplyKeywords = <String>[
   'paid',
 ];
 
+// maps one decision option id to a score change and explanation.
 class SmsActionScore {
   const SmsActionScore(this.actionId, this.points, this.rationale);
 
@@ -42,6 +52,7 @@ class SmsActionScore {
   final String rationale;
 }
 
+// scoring rule bundle for one sms scenario family.
 class SmsScenarioScoringRule {
   const SmsScenarioScoringRule({
     required this.type,
@@ -64,6 +75,7 @@ class SmsScenarioScoringRule {
   final String excellentSummary;
 }
 
+// lookup table that tells the analyzer how each scenario type should score.
 const Map<SmsScenarioType, SmsScenarioScoringRule>
 _smsScoringRules = <SmsScenarioType, SmsScenarioScoringRule>{
   SmsScenarioType.smishing: SmsScenarioScoringRule(
@@ -270,6 +282,7 @@ _smsScoringRules = <SmsScenarioType, SmsScenarioScoringRule>{
   ),
 };
 
+// static-only analyzer that scores the learner's complete sms response.
 class SmsResponseAnalyzer {
   const SmsResponseAnalyzer._();
 
@@ -278,15 +291,21 @@ class SmsResponseAnalyzer {
     required Set<String> actionsSelected,
     required String replyText,
   }) {
+    // each thread resolves to its scenario rule first so the later checks can
+    // score the same reply differently depending on the scam pattern.
     final rule = _smsScoringRules[thread.scenarioType]!;
     final normalizedReply = replyText.trim().toLowerCase();
 
+    // safe examples begin a little higher because the message itself is not
+    // hostile, while scam threads start from a more neutral baseline.
     var rawScore = thread.kind == SmsKind.safe ? 60 : 50;
     final goodChoices = <String>[];
     final mistakes = <String>[];
     final feedback = <String>[];
 
     for (final actionId in actionsSelected) {
+      // selected action chips are translated into point changes and mirrored
+      // into positive or negative coaching strings.
       final actionScore = rule.actionScores.firstWhere(
         (score) => score.actionId == actionId,
         orElse: () => const SmsActionScore('', 0, ''),
@@ -321,6 +340,8 @@ class SmsResponseAnalyzer {
     );
     final leaksSensitiveData = _containsSensitiveData(normalizedReply);
 
+    // typed reply language is scored separately from action choices so the
+    // analyzer can catch mixed behavior like safe taps but unsafe wording.
     rawScore += (safeKeywordCount * 5).clamp(0, 15);
     rawScore -= (redFlagsFound.length * 10).clamp(0, 30);
 
@@ -392,6 +413,8 @@ class SmsResponseAnalyzer {
       ..addAll(goodChoices)
       ..addAll(mistakes);
 
+    // next steps reuse the scenario coaching and add a report reminder when
+    // the learner skipped the report action.
     final nextSteps = <String>{
       ...thread.actions.take(3),
       if (actionsSelected.isNotEmpty &&
@@ -415,6 +438,8 @@ class SmsResponseAnalyzer {
     );
   }
 
+  // checks whether the typed reply looks like it contains personal or account
+  // information that should not be shared in a suspicious text exchange.
   static bool _containsSensitiveData(String replyText) {
     if (replyText.isEmpty) {
       return false;

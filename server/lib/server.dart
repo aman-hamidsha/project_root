@@ -8,6 +8,13 @@ import 'package:mailer/smtp_server.dart';
 import 'src/endpoints.dart';
 import 'src/generated/protocol.dart';
 
+/*
+ * this file is the main backend bootstrap for the Serverpod server.
+ * it creates the server instance, wires in jwt auth plus the email identity
+ * provider, and defines the helper functions that send registration and
+ * password reset codes through the configured smtp provider.
+ */
+
 Future<void> run(List<String> args) async {
   final pod = Serverpod(
     args,
@@ -15,6 +22,8 @@ Future<void> run(List<String> args) async {
     Endpoints(),
   );
 
+  // auth services are configured after the core server is created so the same
+  // password file can supply the jwt secrets and smtp settings.
   pod.initializeAuthServices(
     tokenManagerBuilders: [
       auth_core.JwtConfigFromPasswords(),
@@ -37,6 +46,8 @@ Future<void> _sendRegistrationCode(
   required String verificationCode,
   required Transaction? transaction,
 }) async {
+  // registration and password reset emails both go through the same smtp
+  // helper so mail configuration only lives in one place.
   await _sendEmail(
     session,
     recipient: email,
@@ -68,6 +79,8 @@ Future<void> _sendEmail(
   required String subject,
   required String text,
 }) async {
+  // these values come from server/config/passwords.yaml and are loaded by
+  // Serverpod into the session password map at startup.
   final smtpServer = SmtpServer(
     session.passwords['smtpHost']!,
     port: int.parse(session.passwords['smtpPort']!),
@@ -75,6 +88,7 @@ Future<void> _sendEmail(
     password: session.passwords['smtpPassword']!,
   );
 
+  // the mailer package builds a simple plaintext email for auth flows.
   final message = mailer.Message()
     ..from = mailer.Address(
         session.passwords['smtpFromEmail']!, 'CS310 Security Trainer')

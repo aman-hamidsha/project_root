@@ -6,6 +6,13 @@ import '../../application/auth_controller.dart';
 import '../../domain/auth_state.dart';
 import '../widgets/auth_wireframe_shell.dart';
 
+/*
+ * this file contains the sign-up screen for the local auth flow.
+ * it validates username and password rules on the client side, shows a live
+ * guidance card, and then hands successful registration requests to the auth
+ * controller.
+ */
+
 class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key});
 
@@ -19,6 +26,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _confirmPasswordController = TextEditingController();
   bool _isSubmitting = false;
 
+  // these derived getters drive the live requirement card as the user types.
   bool get _usernameIsValid =>
       RegExp(r'^[a-zA-Z0-9_]{3,20}$').hasMatch(_usernameController.text.trim());
   bool get _hasMinLength => _passwordController.text.length >= 8;
@@ -105,6 +113,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
+    // the page validates the obvious signup rules first so the controller only
+    // sees well-formed requests.
     if (!_usernameIsValid) {
       _showError(
         'Username must be 3-20 characters and use only letters, numbers, or underscores.',
@@ -144,6 +154,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   }
 
   void _showError(String message) {
+    // signup errors are reflected in shared auth state and shown immediately
+    // in a snackbar for quick feedback.
     ref.read(authControllerProvider.notifier).setError(message);
     if (!mounted) return;
     ScaffoldMessenger.of(
@@ -171,6 +183,8 @@ class _GuidanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // this card is intentionally always visible so the user can see the
+    // account rules before they hit the submit button.
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),

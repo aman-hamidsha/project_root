@@ -5,11 +5,19 @@ import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
 
+/*
+ * this file contains the custom scenario endpoint used by the training app.
+ * it serves keyword briefings, scores submitted simulator responses, stores
+ * recent results, and updates basic per-user progress records in the backend.
+ */
+
 class ScenarioEndpoint extends Endpoint {
   Future<KeywordBriefing> getKeywordBriefing(
     Session session, {
     required String keyword,
   }) async {
+    // briefings combine a static overview with live vulnerability and news
+    // lookups so the client gets one bundled response.
     final normalizedKeyword = keyword.trim();
     final searchPhrase = _keywordSearchPhrase(normalizedKeyword);
     final vulnerabilities = await _fetchRecentVulnerabilities(searchPhrase);
@@ -32,6 +40,8 @@ class ScenarioEndpoint extends Endpoint {
     required String replyText,
     String? scenarioType,
   }) async {
+    // the analyzer produces the score first, then the endpoint persists both
+    // the raw submission and the derived result for history/progress views.
     final result = _ScenarioAnalyzer().analyze(
       simulator: simulator,
       actionsSelected: actionsSelected,
@@ -76,6 +86,7 @@ class ScenarioEndpoint extends Endpoint {
     int limit = 10,
   }) async {
     final userId = _getUserId(session);
+    // limit is clamped to avoid excessively large history requests.
     final safeLimit = limit.clamp(1, 50);
     return ScenarioResponse.db.find(
       session,
@@ -87,6 +98,8 @@ class ScenarioEndpoint extends Endpoint {
   }
 
   String _getUserId(Session session) {
+    // anonymous fallback keeps the endpoint usable even if a caller has not
+    // authenticated yet.
     return session.authenticated?.userIdentifier ?? 'anonymous';
   }
 
@@ -96,6 +109,8 @@ class ScenarioEndpoint extends Endpoint {
     required int score,
     required DateTime now,
   }) async {
+    // progress is stored as a rolling aggregate so the dashboard can fetch
+    // totals, averages, and streak data without replaying every response.
     final existing = await UserProgress.db.findFirstRow(
       session,
       where: (t) => t.userId.equals(userId),
@@ -154,6 +169,7 @@ class ScenarioEndpoint extends Endpoint {
   }
 }
 
+// fetches recent cve items from the nvd api for the keyword briefing panel.
 Future<List<KeywordArticle>> _fetchRecentVulnerabilities(String keyword) async {
   final client = HttpClient();
   try {
@@ -207,6 +223,7 @@ Future<List<KeywordArticle>> _fetchRecentVulnerabilities(String keyword) async {
   }
 }
 
+// fetches a few recent google news rss items related to the keyword.
 Future<List<KeywordArticle>> _fetchRecentNews(String keyword) async {
   final client = HttpClient();
   try {

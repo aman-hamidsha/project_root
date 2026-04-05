@@ -1,5 +1,13 @@
 import 'sms_sim_models.dart';
 
+/*
+ * this file holds the canned sms scenarios for the text-message simulator.
+ * each thread includes the visible conversation plus the teaching metadata the
+ * page and analyzer use, such as warning flags, recommended actions, and the
+ * decision options shown to the learner.
+ */
+
+// ordered list of simulator threads shown in the sms inbox.
 const List<SmsThread> smsThreads = [
   SmsThread(
     id: 'campus_safe',

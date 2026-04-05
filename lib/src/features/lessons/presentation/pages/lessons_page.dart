@@ -11,13 +11,16 @@ import '../../../dashboard/domain/dashboard_social_data.dart';
 import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 import '../../domain/lesson_progress_store.dart';
 
+/*
+ * this file contains the lessons page ui and its interactive practice checks.
+ * it renders the lesson picker, theory cards, keyword briefings, and the
+ * scenario, fill-in-the-blank, and matching activities that feed into local
+ * lesson progress and dashboard xp awards.
+ */
+
 /** 
- * The LessonsPage provides an interactive learning experience for users to study
- * various quiz topics. It features a visually engaging design with gradients,
- * custom icons, and styled components. Users can navigate through different
- * lessons, read theory sections, and complete interactive checks like fill-in-
- * the-blank and matching games. The page also tracks lesson progress and
- * celebrates user achievements with floating snackbars.
+ * the lessons page provides an interactive learning experience for users to
+ * study different quiz topics before starting the question bank.
  */
 class LessonsPage extends StatefulWidget {
   const LessonsPage({super.key});
@@ -27,6 +30,8 @@ class LessonsPage extends StatefulWidget {
 }
 
 class _LessonsPageState extends State<LessonsPage> {
+  // backend client used for keyword briefing lookups when a lesson references
+  // a topic the learner can tap for more context.
   final Client _keywordClient = createServerpodClient(BackendConfig.serverUrl);
   String _selectedLessonId = _lessons.first.id;
   final Map<String, String?> _fillBlankSelections = <String, String?>{};

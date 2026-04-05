@@ -1,16 +1,45 @@
 # cs310_app
 
-A new Flutter project.
+Flutter client plus a Serverpod backend for the CS310 project.
 
-## Getting Started
+## Linux desktop prerequisites
 
-This project is a starting point for a Flutter application.
+If you want to run the Flutter app on Linux, install the native desktop build
+dependencies first. On Fedora, the key package for this project is
+`libsecret-devel` because `flutter_secure_storage_linux` links against
+`libsecret-1`.
 
-A few resources to get you started if this is your first Flutter project:
+Typical Fedora setup:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+sudo dnf install clang cmake ninja-build pkgconf-pkg-config gtk3-devel libsecret-devel
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+If your system uses `g++` instead of `clang++`, this also works:
+
+```bash
+export CXX=g++
+```
+
+## Server setup
+
+```bash
+cd server
+./bin/dev_setup.sh
+./bin/dev_start.sh
+```
+
+If a previous server process is still running:
+
+```bash
+cd server
+./bin/dev_stop.sh
+./bin/dev_start.sh --restart
+```
+
+## Flutter run
+
+```bash
+flutter pub get
+flutter run --dart-define=SERVERPOD_SERVER_URL=http://localhost:8080/
+```

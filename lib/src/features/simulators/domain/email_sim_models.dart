@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 
-// the four possible classficaitons for a simulated email
+/*
+ * this file defines the core data models for the email simulator.
+ * it holds the enums for email classification and scenario type, the main
+ * simulated email model used by the ui, the selectable decision options, and
+ * the evaluation model returned after the analyzer scores a response.
+ */
+
+// the high level classification shown to the learner in the inbox and detail ui.
 enum EmailKind {
   safe('Safe Example', Color(0xFF2E9A59)),
   suspicious('Suspicious', Color(0xFFC48720)),
@@ -14,7 +21,7 @@ enum EmailKind {
   final Color color;
 }
 
-// the five distinct
+// the five scenario families used to pick scoring rules and example content.
 enum EmailScenarioType {
   campusSafe,
   accountPhishing,
@@ -23,7 +30,7 @@ enum EmailScenarioType {
   ceoImpersonation,
 }
 
-// complete simualted email used in the phishing simulator
+// one full email scenario with message content, learning notes, and choices.
 class SimEmail {
   const SimEmail({
     required this.id,
@@ -62,6 +69,7 @@ class SimEmail {
   final List<EmailDecisionOption> decisionOptions;
 }
 
+// a single action chip the learner can select while handling an email.
 class EmailDecisionOption {
   const EmailDecisionOption({
     required this.id,
@@ -74,7 +82,7 @@ class EmailDecisionOption {
   final String description;
 }
 
-// The result of evaluating the user's decisions on a simulated email
+// the final analyzer output that powers the score card and coaching ui.
 class EmailResponseEvaluation {
   const EmailResponseEvaluation({
     required this.score,

@@ -1,12 +1,11 @@
 import 'email_sim_models.dart';
 
 /**
- * This file contains the scoring and analysis logic for the email phishing simulator.
- * It defines two keyword lists used to classify reply text, a per-scenario scoring
- * rule system with action point values, and the EmailResponseAnalyzer which combines
- * all of these to produce a full evaluation of the user's decisions and typed reply.
- * Scores are calculated from a base value, adjusted by action choices, reply language,
- * sensitive data detection, and keyword matching, then clamped to a 0–100 range.
+ * this file contains the scoring and analysis logic for the email phishing simulator.
+ * it defines the keyword lists, per-scenario scoring rules, and the analyzer that
+ * turns a user's selected actions plus typed reply into one final evaluation.
+ * the analyzer starts from a base score, adjusts it for safer or riskier behavior,
+ * and then returns a verdict, summary, feedback, and recommended next steps.
  */
 
 // Words in a reply that suggest the user is being appropriately cautious:
@@ -301,15 +300,21 @@ class EmailResponseAnalyzer {
     required Set<String> actionsSelected,
     required String replyText,
   }) {
+    // each scenario type has its own scoring table so the same action can be
+    // judged differently depending on the email being simulated.
     final rule = _emailScoringRules[email.scenarioType]!;
     final normalizedReply = replyText.trim().toLowerCase();
 
+    // safe examples start slightly higher because there is less inherent danger,
+    // while scam scenarios begin from a more neutral baseline.
     var rawScore = email.kind == EmailKind.safe ? 60 : 50;
     final goodChoices = <String>[];
     final mistakes = <String>[];
     final feedback = <String>[];
 
     for (final actionId in actionsSelected) {
+      // selected decision chips are translated into point changes using the
+      // rule table above, then mirrored into positive or negative feedback.
       final actionScore = rule.actionScores.firstWhere(
         (score) => score.actionId == actionId,
         orElse: () => const EmailActionScore('', 0, ''),
@@ -344,6 +349,8 @@ class EmailResponseAnalyzer {
     );
     final leaksSensitiveData = _containsSensitiveData(normalizedReply);
 
+    // reply text is scored separately from button choices so the simulator can
+    // catch cases where a user taps a safe action but writes something unsafe.
     rawScore += (safeKeywordCount * 5).clamp(0, 15);
     rawScore -= (redFlagsFound.length * 10).clamp(0, 30);
 
@@ -419,6 +426,8 @@ class EmailResponseAnalyzer {
       ..addAll(goodChoices)
       ..addAll(mistakes);
 
+    // recommended next steps mix the scenario's built-in coaching with one
+    // extra reporting reminder when the user skipped that step.
     final nextSteps = <String>{
       ...email.actions.take(3),
       if (actionsSelected.isNotEmpty &&
@@ -444,10 +453,10 @@ class EmailResponseAnalyzer {
   }
 
   /**
- * Scans the reply text for patterns that look like real personal data:
- * email addresses, phone numbers, numeric codes, and dates of birth.
- * Returns true if any match is found, triggering a score penalty.
- */
+   * scans the reply text for patterns that look like real personal data such
+   * as email addresses, phone numbers, numeric codes, and dates of birth.
+   * if any are found, the analyzer treats the reply as a possible data leak.
+   */
   static bool _containsSensitiveData(String replyText) {
     if (replyText.isEmpty) {
       return false;

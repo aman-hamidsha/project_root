@@ -3,6 +3,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/theme.dart';
 
+/*
+ * this file contains the reusable auth-page shell and the shared auth widgets
+ * like fields and buttons. the auth screens use these pieces so login,
+ * signup, and landing stay visually consistent without repeating layout code.
+ */
+
 class AuthWireframeShell extends StatelessWidget {
   const AuthWireframeShell({super.key, required this.child});
 
@@ -67,6 +73,8 @@ class AuthWireframeShell extends StatelessWidget {
                           builder: (context, value, child) => Opacity(
                             opacity: value,
                             child: Transform.translate(
+                              // a small entrance motion makes the auth card
+                              // feel less abrupt without adding heavy effects.
                               offset: Offset(0, 18 * (1 - value)),
                               child: child,
                             ),
@@ -103,6 +111,7 @@ class AuthWireframeShell extends StatelessWidget {
   }
 }
 
+// shared text field styling used across login and signup.
 class AuthWireframeField extends StatelessWidget {
   const AuthWireframeField({
     super.key,
@@ -174,6 +183,7 @@ class AuthWireframeField extends StatelessWidget {
   }
 }
 
+// compact secondary action button variant kept for the auth wireframe set.
 class AuthWireframeActionButton extends StatelessWidget {
   const AuthWireframeActionButton({
     super.key,
@@ -217,6 +227,7 @@ class AuthWireframeActionButton extends StatelessWidget {
   }
 }
 
+// main full-width auth button used for primary actions like login and signup.
 class AuthWireframePrimaryButton extends StatelessWidget {
   const AuthWireframePrimaryButton({
     super.key,
@@ -255,6 +266,7 @@ class AuthWireframePrimaryButton extends StatelessWidget {
   }
 }
 
+// small corner button used for quick exits back to landing.
 class _CornerButton extends StatelessWidget {
   const _CornerButton({required this.label, required this.onPressed});
 

@@ -6,6 +6,13 @@ import '../../../../app/theme.dart';
 import '../../../dashboard/domain/dashboard_social_data.dart';
 import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 
+/*
+ * this file contains the crypto scam simulator ui.
+ * it walks the learner through a sequence of fake projects, lets them choose
+ * whether to invest or walk away, scores the reasoning behind the choice, and
+ * tracks the simulated balance across the full scenario run.
+ */
+
 class CryptoScamSimPage extends StatefulWidget {
   const CryptoScamSimPage({super.key});
 
@@ -191,6 +198,8 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
     }
 
     setState(() {
+      // the learner can analyze first, review the feedback, and then decide
+      // whether to commit that trade choice.
       _currentEvaluation = CryptoDecisionEngine.evaluate(
         project: project,
         selectedDecision: decision,
@@ -219,6 +228,8 @@ class _CryptoScamSimPageState extends State<CryptoScamSimPage> {
         );
     final invested = decision == SimTradeDecision.invest;
     final project = _currentProject;
+    // investing applies the simulated outcome to the running balance, while
+    // walking away can count as money saved when the project was a trap.
     final nextBalance = invested
         ? _balance + project.outcomeIfInvested
         : _balance;

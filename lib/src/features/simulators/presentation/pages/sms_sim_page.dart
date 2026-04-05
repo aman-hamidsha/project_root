@@ -9,6 +9,13 @@ import '../../domain/sms_response_engine.dart';
 import '../../domain/sms_sim_data.dart';
 import '../../domain/sms_sim_models.dart';
 
+/*
+ * this file contains the full ui for the sms simulator.
+ * it shows a thread list on the left or on mobile first, keeps per-thread
+ * reply drafts and selected actions in memory, and runs the sms response
+ * engine to score the learner's choices and typed reply.
+ */
+
 class SmsSimPage extends StatefulWidget {
   const SmsSimPage({super.key});
 
@@ -19,6 +26,8 @@ class SmsSimPage extends StatefulWidget {
 class _SmsSimPageState extends State<SmsSimPage> {
   int _selectedIndex = 0;
   bool _showMobileDetail = false;
+  // each thread keeps its own draft, selected action, and evaluation so the
+  // learner can switch between conversations without losing work.
   final Map<String, TextEditingController> _replyControllers =
       <String, TextEditingController>{};
   final Map<String, Set<String>> _selectedActionIds = <String, Set<String>>{};
@@ -208,6 +217,8 @@ class _SmsSimPageState extends State<SmsSimPage> {
       _evaluations[thread.id] = evaluation;
     });
 
+    // xp scales with the score so stronger decisions feel more rewarding while
+    // still giving progress credit for completing a scenario.
     final award = await DashboardSocialActivity.recordCurrentUserActivity(
       type: UserActivityType.simulatorDecision,
       activityId: 'sms:${thread.id}',
@@ -228,6 +239,7 @@ class _SmsSimPageState extends State<SmsSimPage> {
   }
 }
 
+// list panel that previews all sms threads in the simulator inbox.
 class _ThreadListPanel extends StatelessWidget {
   const _ThreadListPanel({
     required this.threads,
@@ -294,6 +306,7 @@ class _ThreadListPanel extends StatelessWidget {
   }
 }
 
+// one thread preview row inside the sms inbox panel.
 class _ThreadPreviewCard extends StatelessWidget {
   const _ThreadPreviewCard({
     required this.thread,
@@ -386,6 +399,7 @@ class _ThreadPreviewCard extends StatelessWidget {
   }
 }
 
+// detail panel for a single thread, including transcript and analysis ui.
 class _ThreadDetailPanel extends StatelessWidget {
   const _ThreadDetailPanel({
     required this.thread,
@@ -512,6 +526,7 @@ class _ThreadDetailPanel extends StatelessWidget {
   }
 }
 
+// top metadata card for the selected text-message scenario.
 class _ConversationHeader extends StatelessWidget {
   const _ConversationHeader({required this.thread});
 
@@ -552,6 +567,7 @@ class _ConversationHeader extends StatelessWidget {
   }
 }
 
+// transcript card that shows incoming messages plus the current draft reply.
 class _ChatTranscript extends StatelessWidget {
   const _ChatTranscript({required this.thread, required this.draftReply});
 
@@ -592,6 +608,7 @@ class _ChatTranscript extends StatelessWidget {
   }
 }
 
+// one message bubble in the fake texting conversation.
 class _SmsBubble extends StatelessWidget {
   const _SmsBubble({required this.message});
 
@@ -652,6 +669,7 @@ class _SmsBubble extends StatelessWidget {
   }
 }
 
+// interaction area where the learner picks an action and types a reply.
 class _DecisionLab extends StatefulWidget {
   const _DecisionLab({
     required this.thread,
@@ -695,6 +713,7 @@ class _DecisionLabState extends State<_DecisionLab> {
     super.dispose();
   }
 
+  // rebuilding here keeps the live draft bubble in sync as the user types.
   void _handleChange() {
     if (mounted) {
       setState(() {});

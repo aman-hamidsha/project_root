@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+/*
+ * this file centralizes the svg asset paths used across the app and provides
+ * a small wrapper widget for rendering them with consistent color and sizing.
+ */
+
 class AppIcons {
   const AppIcons._();
 
+  // keeping icon asset paths here avoids hardcoding string paths throughout
+  // the ui and makes future asset swaps much simpler.
   static const String arrowLeft = 'assets/icons/arrow-left.svg';
   static const String sun = 'assets/icons/sun.svg';
   static const String moon = 'assets/icons/moon.svg';
@@ -23,9 +30,8 @@ class AppIcons {
 }
 
 /**
- * The AppSvgIcon widget is a reusable component that displays an SVG icon from the assets.
- * It takes the asset path, color, size, and an optional semantic label as parameters.
- * It uses the SvgPicture.asset widget from the flutter_svg package to render the SVG icon.
+ * this widget renders one svg icon from the app asset set.
+ * it wraps SvgPicture.asset so pages can use the same icon api everywhere.
  */
 class AppSvgIcon extends StatelessWidget {
   const AppSvgIcon(
@@ -43,6 +49,8 @@ class AppSvgIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // a color filter is used so the same svg asset can be tinted differently
+    // across dark mode, light mode, and status-specific ui.
     return SvgPicture.asset(
       asset,
       width: size,

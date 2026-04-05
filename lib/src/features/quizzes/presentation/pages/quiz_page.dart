@@ -10,13 +10,15 @@ import '../../../../app/theme.dart';
 import '../../../dashboard/domain/dashboard_social_data.dart';
 import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 
+/*
+ * this file contains the adaptive quiz page and its local progress system.
+ * it lets the learner choose a chapter, assembles a session from that bank,
+ * records answers and chapter progress, and then shows a results view with
+ * retry and review options.
+ */
+
 /** 
- * The QuizPage offers an adaptive quiz experience with multiple topic banks. 
- * Users can select a topic, answer a series of questions, and receive feedback on their 
- * performance. The page features a dynamic question selection 
- * algorithm that prioritizes unseen questions and rotates in older ones based on 
- * user progress. After completing a quiz, users can review their results, 
- * see which questions they missed, and choose to retry or select a different topic. 
+ * the quiz page offers an adaptive quiz experience with multiple topic banks.
  */
 class QuizPage extends StatefulWidget {
   const QuizPage({super.key, this.initialChapterId});
@@ -28,6 +30,8 @@ class QuizPage extends StatefulWidget {
 }
 
 class _QuizPageState extends State<QuizPage> {
+  // repository wraps the local persistence and adaptive question selection
+  // bookkeeping for each chapter bank.
   final QuizBankRepository _bankRepository = QuizBankRepository();
 
   QuizChapter? _selectedChapter;
@@ -186,6 +190,8 @@ class _QuizPageState extends State<QuizPage> {
     });
 
     final initialChapterId = widget.initialChapterId;
+    // if the router opened the page with a chapter query parameter, start that
+    // chapter automatically once the stored progress is loaded.
     if (initialChapterId != null && _selectedChapter == null) {
       QuizChapter? chapter;
       for (final item in _chapters) {

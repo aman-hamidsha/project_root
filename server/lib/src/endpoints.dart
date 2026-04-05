@@ -5,9 +5,17 @@ import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
 import 'endpoints/email_idp_endpoint.dart' as _i3;
 import 'endpoints/scenario_endpoint.dart' as _i4;
 
+/*
+ * this file wires server endpoints into Serverpod's dispatch system.
+ * it registers the scenario endpoint used by the app's training features and
+ * the email auth identity-provider endpoint used for backend auth flows.
+ */
+
 class Endpoints extends _i1.EndpointDispatch {
   @override
   void initializeEndpoints(_i1.Server server) {
+    // auth core is mounted as a module, while the app's custom scenario
+    // endpoint is registered directly below.
     modules['serverpod_auth_core'] = _i2.Endpoints()
       ..initializeEndpoints(server);
     modules['serverpod_auth_idp'] = _EmailIdpModuleDispatch()
@@ -102,6 +110,7 @@ class Endpoints extends _i1.EndpointDispatch {
   }
 }
 
+// separate dispatch wrapper for the email identity-provider module endpoints.
 class _EmailIdpModuleDispatch extends _i1.EndpointDispatch {
   @override
   void initializeEndpoints(_i1.Server server) {

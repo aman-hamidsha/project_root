@@ -8,6 +8,13 @@ import '../../../../app/theme.dart';
 import '../../../dashboard/domain/dashboard_social_data.dart';
 import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 
+/*
+ * this file contains the public wi-fi simulator ui.
+ * it lets the learner pick from several hotspot options, then shows either a
+ * review of the safer choice or a flipped attacker-side view that explains
+ * what a malicious hotspot owner could watch, collect, or influence.
+ */
+
 class WifiSimPage extends StatefulWidget {
   const WifiSimPage({super.key});
 
@@ -153,8 +160,11 @@ class _WifiSimPageState extends State<WifiSimPage> {
   Future<void> _connectToSelectedNetwork() async {
     setState(() {
       _connected = true;
+      // unsafe network choices trigger the flip animation into the attacker
+      // perspective so the learner sees the consequence of the decision.
       _showAttackerView = _selectedNetwork.opensUserToSnooping;
     });
+    // safer choices award more xp because the learner picked the stronger habit.
     final xpEarned = _selectedNetwork.opensUserToSnooping ? 28 : 54;
     final award = await DashboardSocialActivity.recordCurrentUserActivity(
       type: UserActivityType.simulatorDecision,
@@ -175,6 +185,7 @@ class _WifiSimPageState extends State<WifiSimPage> {
   }
 }
 
+// left-side network picker and connect action for the simulator.
 class _WifiSettingsPanel extends StatelessWidget {
   const _WifiSettingsPanel({
     required this.networks,
@@ -266,6 +277,7 @@ class _WifiSettingsPanel extends StatelessWidget {
   }
 }
 
+// right-side training card that flips between learner and attacker views.
 class _WifiTrainingPanel extends StatelessWidget {
   const _WifiTrainingPanel({
     required this.network,
@@ -282,6 +294,8 @@ class _WifiTrainingPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
+      // the panel rotates in 3d so an unsafe choice can "flip" into the
+      // hotspot owner perspective without changing routes.
       tween: Tween<double>(begin: 0, end: showAttackerView ? 1 : 0),
       duration: const Duration(milliseconds: 620),
       curve: Curves.easeInOutCubic,
@@ -313,6 +327,7 @@ class _WifiTrainingPanel extends StatelessWidget {
   }
 }
 
+// front face of the simulator card that explains the chosen network.
 class _DecisionViewCard extends StatelessWidget {
   const _DecisionViewCard({
     required this.network,
@@ -451,6 +466,7 @@ class _DecisionViewCard extends StatelessWidget {
   }
 }
 
+// back face that explains what a risky hotspot operator could observe or do.
 class _AttackerViewCard extends StatelessWidget {
   const _AttackerViewCard({required this.network, required this.onTryAgain});
 
@@ -563,6 +579,7 @@ class _AttackerViewCard extends StatelessWidget {
   }
 }
 
+// one selectable network row in the wi-fi list.
 class _NetworkTile extends StatelessWidget {
   const _NetworkTile({
     required this.network,
@@ -670,6 +687,7 @@ class _NetworkTile extends StatelessWidget {
   }
 }
 
+// short question prompt shown under the network list to guide the choice.
 class _PromptCard extends StatelessWidget {
   const _PromptCard({required this.network});
 
@@ -699,6 +717,7 @@ class _PromptCard extends StatelessWidget {
   }
 }
 
+// reusable titled container used across the wifi simulator panels.
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
     required this.title,
@@ -756,6 +775,7 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
+// small pill used for labels like security type and trust level.
 class _InfoPill extends StatelessWidget {
   const _InfoPill({required this.label});
 
@@ -782,6 +802,7 @@ class _InfoPill extends StatelessWidget {
   }
 }
 
+// grid of example data an unsafe hotspot could expose or infer.
 class _CapturedDataGrid extends StatelessWidget {
   const _CapturedDataGrid({required this.items});
 
@@ -831,6 +852,7 @@ class _CapturedDataGrid extends StatelessWidget {
   }
 }
 
+// standard bullet row used for hints, attacker moves, and safety habits.
 class _BulletLine extends StatelessWidget {
   const _BulletLine({required this.text, required this.color});
 
@@ -875,6 +897,7 @@ class _BulletLine extends StatelessWidget {
   }
 }
 
+// lightweight page header back button shared by this simulator page.
 class _TopButton extends StatelessWidget {
   const _TopButton({required this.label, required this.onTap});
 
@@ -908,6 +931,7 @@ class _TopButton extends StatelessWidget {
   }
 }
 
+// complete model for one simulated wi-fi network choice.
 class SimWifiNetwork {
   const SimWifiNetwork({
     required this.id,
@@ -942,6 +966,7 @@ class SimWifiNetwork {
   final List<WifiCapturedDatum> capturedData;
 }
 
+// one captured-data example shown in the attacker-side grid.
 class WifiCapturedDatum {
   const WifiCapturedDatum({
     required this.label,
@@ -954,6 +979,7 @@ class WifiCapturedDatum {
   final WifiDatumTone tone;
 }
 
+// visual tone used to color-code the fake captured-data examples.
 enum WifiDatumTone {
   alert(Color(0xFFFFE0E0), Color(0xFFB13232)),
   watch(Color(0xFFFFF0D8), Color(0xFFC48720)),
@@ -965,6 +991,7 @@ enum WifiDatumTone {
   final Color foreground;
 }
 
+// ordered hotspot list shown in the simulator settings panel.
 const List<SimWifiNetwork> wifiNetworks = <SimWifiNetwork>[
   SimWifiNetwork(
     id: 'cafe_guest',

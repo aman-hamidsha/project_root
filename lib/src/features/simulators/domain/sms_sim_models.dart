@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 
+/*
+ * this file defines the core data models for the sms simulator.
+ * it includes the thread and message models, the scenario and risk enums,
+ * the decision-option model used by the ui, and the final evaluation object
+ * returned after a learner's response is scored.
+ */
+
+// top-level classification shown to the learner for each text scenario.
 enum SmsKind {
   safe('Safe Example', Color(0xFF2E9A59)),
   suspicious('Suspicious', Color(0xFFC48720)),
@@ -13,8 +21,10 @@ enum SmsKind {
   final Color color;
 }
 
+// the five scenario families used by the sms analyzer and sample data.
 enum SmsScenarioType { campusSafe, smishing, fraudAlert, jobScam, friendInNeed }
 
+// complete sms thread used by the simulator page and analyzer.
 class SmsThread {
   const SmsThread({
     required this.id,
@@ -49,6 +59,7 @@ class SmsThread {
   final List<SmsDecisionOption> decisionOptions;
 }
 
+// one visible bubble in a simulated message thread.
 class SmsMessage {
   const SmsMessage({
     required this.text,
@@ -61,6 +72,7 @@ class SmsMessage {
   final bool incoming;
 }
 
+// one action chip the learner can select for a text scenario.
 class SmsDecisionOption {
   const SmsDecisionOption({
     required this.id,
@@ -73,6 +85,7 @@ class SmsDecisionOption {
   final String description;
 }
 
+// final scoring output used by the sms feedback card.
 class SmsResponseEvaluation {
   const SmsResponseEvaluation({
     required this.score,

@@ -4,6 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_icons.dart';
 
+/*
+ * this file defines the shared app theming setup.
+ * it contains the light and dark themes, the theme mode controller that saves
+ * the current choice, shared shadow styling, and the toggle button used in
+ * the main pages to switch appearance.
+ */
+
 const _darkBg = Color(0xFF02123D);
 const _darkCard = Color(0xFF0A3C86);
 const _darkCardSoft = Color(0xFF0B4AA3);
@@ -15,12 +22,6 @@ const _lightCard = Color(0xFFFFFFFF);
 const _lightCardSoft = Color(0xFFDDEBFF);
 const _lightAccent = Color(0xFF2B6DDB);
 const _lightSurfaceAlt = Color(0xFFE7F0FF);
-
-/**
- * This file defines the app's themes (light and dark) and a ThemeToggleButton widget. 
- * It also includes a ThemeModeController that manages the current theme mode and 
- * persists it using SharedPreferences.
- */
 
 final themeModeProvider = StateNotifierProvider<ThemeModeController, ThemeMode>(
   (ref) => ThemeModeController(),
@@ -34,6 +35,8 @@ class ThemeModeController extends StateNotifier<ThemeMode> {
   static const String _storageKey = 'app_theme_mode_v1';
 
   Future<void> _load() async {
+    // restore the previously selected theme so the app keeps the same look
+    // across launches.
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_storageKey);
     state = switch (stored) {
@@ -55,6 +58,7 @@ class ThemeModeController extends StateNotifier<ThemeMode> {
   }
 }
 
+// shared card shadow helper used across many pages and panels.
 List<BoxShadow> appShadows(bool isDark) => <BoxShadow>[
   BoxShadow(
     color: isDark
@@ -65,7 +69,7 @@ List<BoxShadow> appShadows(bool isDark) => <BoxShadow>[
   ),
 ];
 
-// dark theme
+// dark theme used across the app's custom page set.
 final appDarkTheme = ThemeData(
   useMaterial3: true,
   brightness: Brightness.dark,
@@ -154,7 +158,7 @@ final appDarkTheme = ThemeData(
   splashFactory: InkRipple.splashFactory,
 );
 
-//dark theme
+// light theme counterpart for the same component palette.
 final appLightTheme = ThemeData(
   useMaterial3: true,
   brightness: Brightness.light,
