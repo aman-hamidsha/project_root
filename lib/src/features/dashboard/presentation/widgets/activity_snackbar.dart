@@ -4,6 +4,15 @@ import '../../../../app/app_icons.dart';
 import '../../../../app/theme.dart';
 import '../../domain/dashboard_social_data.dart';
 
+/**
+ * Provides the showActivityCelebration helper function, which displays a styled
+ * floating snackbar whenever the user earns a celebration-worthy award: either
+ * unlocking a new streak day or levelling up. The snackbar shows a headline,
+ * a message, the XP earned, and an icon that changes colour depending on the
+ * award type (orange for a streak, blue for a level-up). If the award is null
+ * or does not meet the celebration threshold, the function exits silently and
+ * nothing is shown.
+ */
 void showActivityCelebration(BuildContext context, ActivityAward? award) {
   if (award == null || !award.shouldCelebrate) {
     return;
@@ -82,7 +91,10 @@ void showActivityCelebration(BuildContext context, ActivityAward? award) {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(14),

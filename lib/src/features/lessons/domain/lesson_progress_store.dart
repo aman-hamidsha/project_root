@@ -2,6 +2,10 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+// This file defines the lesson catalog plus the local persistence helpers
+// that track which parts of each lesson the user has completed.
+
+/** Metadata for a single lesson entry in the catalog: id, label, title, and summary. */
 class LessonCatalogEntry {
   const LessonCatalogEntry({
     required this.id,
@@ -16,6 +20,7 @@ class LessonCatalogEntry {
   final String summary;
 }
 
+/** The full ordered list of all seven lessons available in the app. */
 const List<LessonCatalogEntry> lessonCatalog = <LessonCatalogEntry>[
   LessonCatalogEntry(
     id: 'basics',
@@ -68,6 +73,7 @@ const List<LessonCatalogEntry> lessonCatalog = <LessonCatalogEntry>[
   ),
 ];
 
+/** A snapshot of the user's lesson progress across all three step types: view, fill-blank, and match. */
 class LessonProgressSnapshot {
   const LessonProgressSnapshot({
     required this.lastLessonId,
@@ -87,6 +93,7 @@ class LessonProgressSnapshot {
   final Set<String> fillBlankMasteredIds;
   final Set<String> matchMasteredIds;
 
+  /** Returns the catalog entry for the last lesson the user visited, falling back to the first lesson if not found. */
   LessonCatalogEntry get lastLesson {
     return lessonCatalog.firstWhere(
       (lesson) => lesson.id == lastLessonId,
@@ -94,22 +101,28 @@ class LessonProgressSnapshot {
     );
   }
 
-  int get completedStepCount =>
+  /** Counts every completed lesson step across the entire catalog. */
+  int
+  get completedStepCount => // total number of completed steps across all lessons, counting each step type separately
       viewedLessonIds.length +
       fillBlankMasteredIds.length +
       matchMasteredIds.length;
 
-  int get totalStepCount => lessonCatalog.length * 3;
+  /** Returns the maximum number of trackable lesson steps. */
+  int get totalStepCount => lessonCatalog.length * 3; // maximum possible steps
 
+  /** Converts the total completed steps into a 0-1 overall progress value. */
   double get overallProgress =>
       totalStepCount == 0 ? 0 : completedStepCount / totalStepCount;
 
+  /** Counts lessons where all three tracked steps have been completed. */
   int get completedLessonCount {
     return lessonCatalog
         .where((lesson) => progressForLesson(lesson.id) >= 1)
         .length;
   }
 
+  /** Returns per-lesson completion as a fraction of its three tracked steps. */
   double progressForLesson(String lessonId) {
     var completedSteps = 0;
     if (viewedLessonIds.contains(lessonId)) {
@@ -124,6 +137,7 @@ class LessonProgressSnapshot {
     return completedSteps / 3;
   }
 
+  /** Describes the next incomplete step the UI should encourage for a lesson. */
   String nextStepForLesson(String lessonId) {
     if (!viewedLessonIds.contains(lessonId)) {
       return 'Start the theory walkthrough.';
@@ -152,11 +166,13 @@ class LessonProgressSnapshot {
   }
 }
 
+/** Handles reading and writing lesson progress snapshots from local storage. */
 class LessonProgressStore {
   const LessonProgressStore._();
 
   static const String _storageKey = 'lesson_progress_snapshot_v1';
 
+  /** Loads the saved lesson snapshot, or returns an empty one if none exists. */
   static Future<LessonProgressSnapshot> load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_storageKey);
@@ -178,6 +194,7 @@ class LessonProgressStore {
     }
   }
 
+  /** Marks a lesson as selected and records its theory step as viewed. */
   static Future<LessonProgressSnapshot> updateSelection(String lessonId) async {
     final snapshot = await load();
     final viewed = Set<String>.from(snapshot.viewedLessonIds)..add(lessonId);
@@ -189,6 +206,7 @@ class LessonProgressStore {
     return updated;
   }
 
+  /** Adds a lesson to the fill-in-the-blank mastered set when completed. */
   static Future<LessonProgressSnapshot> setFillBlankMastered(
     String lessonId,
     bool mastered,
@@ -203,6 +221,7 @@ class LessonProgressStore {
     return updated;
   }
 
+  /** Adds a lesson to the match activity mastered set when completed. */
   static Future<LessonProgressSnapshot> setMatchMastered(
     String lessonId,
     bool mastered,
@@ -217,11 +236,13 @@ class LessonProgressStore {
     return updated;
   }
 
+  /** Clears the saved snapshot so lesson progress starts from scratch. */
   static Future<void> reset() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_storageKey);
   }
 
+  /** Serializes the snapshot back into SharedPreferences as JSON. */
   static Future<void> _save(LessonProgressSnapshot snapshot) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
@@ -237,6 +258,7 @@ class LessonProgressStore {
     );
   }
 
+  /** Coerces a decoded JSON list into a string set. */
   static Set<String> _decodeSet(Object? value) {
     if (value is! List) {
       return <String>{};
