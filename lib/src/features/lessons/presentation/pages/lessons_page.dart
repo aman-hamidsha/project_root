@@ -11,6 +11,14 @@ import '../../../dashboard/domain/dashboard_social_data.dart';
 import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 import '../../domain/lesson_progress_store.dart';
 
+/** 
+ * The LessonsPage provides an interactive learning experience for users to study
+ * various quiz topics. It features a visually engaging design with gradients,
+ * custom icons, and styled components. Users can navigate through different
+ * lessons, read theory sections, and complete interactive checks like fill-in-
+ * the-blank and matching games. The page also tracks lesson progress and
+ * celebrates user achievements with floating snackbars.
+ */
 class LessonsPage extends StatefulWidget {
   const LessonsPage({super.key});
 

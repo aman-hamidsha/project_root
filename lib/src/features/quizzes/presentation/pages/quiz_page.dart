@@ -10,6 +10,14 @@ import '../../../../app/theme.dart';
 import '../../../dashboard/domain/dashboard_social_data.dart';
 import '../../../dashboard/presentation/widgets/activity_snackbar.dart';
 
+/** 
+ * The QuizPage offers an adaptive quiz experience with multiple topic banks. 
+ * Users can select a topic, answer a series of questions, and receive feedback on their 
+ * performance. The page features a dynamic question selection 
+ * algorithm that prioritizes unseen questions and rotates in older ones based on 
+ * user progress. After completing a quiz, users can review their results, 
+ * see which questions they missed, and choose to retry or select a different topic. 
+ */
 class QuizPage extends StatefulWidget {
   const QuizPage({super.key, this.initialChapterId});
 

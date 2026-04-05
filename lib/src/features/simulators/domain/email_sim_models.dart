@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// the four possible classficaitons for a simulated email
 enum EmailKind {
   safe('Safe Example', Color(0xFF2E9A59)),
   suspicious('Suspicious', Color(0xFFC48720)),
@@ -13,6 +14,7 @@ enum EmailKind {
   final Color color;
 }
 
+// the five distinct
 enum EmailScenarioType {
   campusSafe,
   accountPhishing,
@@ -21,6 +23,7 @@ enum EmailScenarioType {
   ceoImpersonation,
 }
 
+// complete simualted email used in the phishing simulator
 class SimEmail {
   const SimEmail({
     required this.id,
@@ -71,6 +74,7 @@ class EmailDecisionOption {
   final String description;
 }
 
+// The result of evaluating the user's decisions on a simulated email
 class EmailResponseEvaluation {
   const EmailResponseEvaluation({
     required this.score,

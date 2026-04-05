@@ -1,5 +1,16 @@
 import 'email_sim_models.dart';
 
+/**
+ * This file contains the scoring and analysis logic for the email phishing simulator.
+ * It defines two keyword lists used to classify reply text, a per-scenario scoring
+ * rule system with action point values, and the EmailResponseAnalyzer which combines
+ * all of these to produce a full evaluation of the user's decisions and typed reply.
+ * Scores are calculated from a base value, adjusted by action choices, reply language,
+ * sensitive data detection, and keyword matching, then clamped to a 0–100 range.
+ */
+
+// Words in a reply that suggest the user is being appropriately cautious:
+// used to apply a small score bonus and flag protective intent.
 const List<String> _emailProtectiveReplyKeywords = <String>[
   'scam',
   'phishing',
@@ -15,6 +26,8 @@ const List<String> _emailProtectiveReplyKeywords = <String>[
   'no',
 ];
 
+// Words in a reply that suggest the user is complying with the scam:
+// used to penalise cooperative or submissive responses.
 const List<String> _emailCooperativeReplyKeywords = <String>[
   'yes',
   'okay',
@@ -32,6 +45,7 @@ const List<String> _emailCooperativeReplyKeywords = <String>[
   'paid',
 ];
 
+/** Maps a single decision button to a point value and a rationale string shown in feedback. */
 class EmailActionScore {
   const EmailActionScore(this.actionId, this.points, this.rationale);
 
@@ -40,6 +54,11 @@ class EmailActionScore {
   final String rationale;
 }
 
+/**
+ * Defines how a specific scenario type is scored. Holds action point values,
+ * red flag and safe keywords to scan the reply for, and four summary strings
+ * that are selected based on the user's final score band.
+ */
 class EmailScenarioScoringRule {
   const EmailScenarioScoringRule({
     required this.type,
@@ -62,6 +81,8 @@ class EmailScenarioScoringRule {
   final String excellentSummary;
 }
 
+// Lookup table mapping each scenario type to its scoring rule.
+// All five scenario types must have an entry here or the analyzer will throw.
 const Map<EmailScenarioType, EmailScenarioScoringRule>
 _emailScoringRules = <EmailScenarioType, EmailScenarioScoringRule>{
   EmailScenarioType.accountPhishing: EmailScenarioScoringRule(
@@ -266,6 +287,12 @@ _emailScoringRules = <EmailScenarioType, EmailScenarioScoringRule>{
   ),
 };
 
+/**
+ * Static-only class that evaluates the user's full response to a simulated email.
+ * Takes the selected action buttons and the typed reply together, applies the
+ * relevant scenario scoring rule, detects sensitive data and keyword patterns,
+ * and returns a complete EmailResponseEvaluation with score, verdict, and feedback.
+ */
 class EmailResponseAnalyzer {
   const EmailResponseAnalyzer._();
 
@@ -416,6 +443,11 @@ class EmailResponseAnalyzer {
     );
   }
 
+  /**
+ * Scans the reply text for patterns that look like real personal data:
+ * email addresses, phone numbers, numeric codes, and dates of birth.
+ * Returns true if any match is found, triggering a score penalty.
+ */
   static bool _containsSensitiveData(String replyText) {
     if (replyText.isEmpty) {
       return false;

@@ -9,6 +9,21 @@ import '../../domain/email_response_engine.dart';
 import '../../domain/email_sim_data.dart';
 import '../../domain/email_sim_models.dart';
 
+/**
+ * This file contains the full UI for the Email Phishing Simulator.
+ * It renders a two-panel layout on wide screens (inbox list + email detail)
+ * and a single-panel layout on mobile where tapping an inbox item slides
+ * into the detail view. Each email tracks its own reply text, selected action,
+ * and evaluation result independently so the user can switch between emails
+ * without losing their work. Submitting a response runs the scoring engine,
+ * saves an XP activity record, and shows a celebration snackbar if warranted.
+ */
+
+/**
+ * Root stateful widget for the email simulator. Manages which email is
+ * selected, whether mobile detail view is active, and holds per-email
+ * state maps for reply controllers, selected actions, and evaluations.
+ */
 class EmailSimPage extends StatefulWidget {
   const EmailSimPage({super.key});
 
@@ -27,6 +42,8 @@ class _EmailSimPageState extends State<EmailSimPage> {
 
   SimEmail get _selectedEmail => simEmails[_selectedIndex];
 
+  // Returns or creates a TextEditingController for the given email id,
+  // so each email keeps its own reply draft independently.
   TextEditingController _controllerFor(String emailId) {
     return _replyControllers.putIfAbsent(emailId, TextEditingController.new);
   }
