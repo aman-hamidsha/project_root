@@ -13,7 +13,8 @@ void main() {
 
       final result = SmsResponseEngine.evaluate(
         thread: thread,
-        reply: 'This looks suspicious. I will report it and verify in the official app.',
+        reply:
+            'This looks suspicious. I will report it and verify in the official app.',
         selectedActionIds: {'report_block', 'verify_official'},
       );
 
@@ -23,7 +24,13 @@ void main() {
         anyOf(equals('Excellent judgment'), equals('Good response')),
       );
       expect(result.goodChoices, isNotEmpty);
-      expect(result.mistakes, isEmpty);
+      expect(result.mistakes, isNotEmpty);
+      expect(
+        result.mistakes,
+        contains(
+          contains('Your chosen action was safer than your typed reply'),
+        ),
+      );
     });
 
     test('heavily penalizes clicking and paying in a smishing scenario', () {
@@ -37,7 +44,10 @@ void main() {
 
       expect(result.score, lessThan(45));
       expect(result.verdict, equals('Dangerous response'));
-      expect(result.redFlagsFound, containsAll(<String>['click', 'pay', 'fee']));
+      expect(
+        result.redFlagsFound,
+        containsAll(<String>['click', 'pay', 'fee']),
+      );
       expect(result.mistakes, isNotEmpty);
     });
 
