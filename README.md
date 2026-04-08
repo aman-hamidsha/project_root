@@ -1,27 +1,30 @@
-# cs310_app
+# CS310 Run Instructions
 
-Flutter client plus a Serverpod backend for the CS310 project.
+## 1. Install The Required Tools
 
-## Linux desktop prerequisites
+You need these installed before the project will run:
 
-If you want to run the Flutter app on Linux, install the native desktop build
-dependencies first. On Fedora, the key package for this project is
-`libsecret-devel` because `flutter_secure_storage_linux` links against
-`libsecret-1`.
+- Flutter SDK
+- Chrome
+- Docker or Podman with Compose support
+- Android Studio if you want to run the Android app
 
-Typical Fedora setup:
-
-```bash
-sudo dnf install clang cmake ninja-build pkgconf-pkg-config gtk3-devel libsecret-devel
-```
-
-If your system uses `g++` instead of `clang++`, this also works:
+Check that Flutter is installed correctly:
 
 ```bash
-export CXX=g++
+flutter doctor
 ```
 
-## Server setup
+If you want the Android version, open Android Studio and install:
+
+- Android SDK
+- Android SDK Platform-Tools
+- Android Emulator
+- at least one Android system image
+
+## 2. Start The Backend
+
+From the project root:
 
 ```bash
 cd server
@@ -29,7 +32,14 @@ cd server
 ./bin/dev_start.sh
 ```
 
-If a previous server process is still running:
+What this does:
+
+- creates `server/config/passwords.yaml` from the example if it does not exist
+- starts the bundled Postgres database
+- applies migrations
+- starts the Serverpod backend
+
+If the server is already running and you want to restart it:
 
 ```bash
 cd server
@@ -37,9 +47,86 @@ cd server
 ./bin/dev_start.sh --restart
 ```
 
-## Flutter run
+Leave this terminal open while the app is running.
+
+## 3. Run The Web App
+
+Open a new terminal in the project root and run:
 
 ```bash
 flutter pub get
-flutter run --dart-define=SERVERPOD_SERVER_URL=http://localhost:8080/
+flutter run -d chrome 
+```
+
+This starts the Flutter web app in Chrome and points it at the local backend.
+
+## 4. Run On An Android Emulator
+
+First list the available emulators:
+
+```bash
+flutter emulators
+```
+
+Launch one:
+
+```bash
+flutter emulators --launch <emulator_id>
+```
+
+Confirm the device is available:
+
+```bash
+flutter devices
+```
+
+Then run the app on the emulator:
+
+```bash
+flutter pub get
+flutter run -d <device_id> 
+```
+
+
+## 5. Run On Linux Desktop
+
+Only do this if you want the desktop build instead of the web version.
+
+On Fedora, install the native Linux dependencies first:
+
+```bash
+sudo dnf install clang cmake ninja-build pkgconf-pkg-config gtk3-devel libsecret-devel
+```
+
+Then run:
+
+```bash
+flutter pub get
+flutter run -d linux --dart-define=SERVERPOD_SERVER_URL=http://localhost:8080/
+```
+
+If your system prefers `g++` over `clang++`, run this first:
+
+```bash
+export CXX=g++
+```
+
+## 6. Quick Start
+
+If you just want the web app:
+
+Terminal 1:
+
+```bash
+cd server
+./bin/dev_setup.sh
+./bin/dev_start.sh
+```
+
+Terminal 2:
+
+```bash
+cd ..
+flutter pub get
+flutter run -d chrome 
 ```
